@@ -1,0 +1,23 @@
+[package]
+name = "jfp"
+version = "0.1.0"
+edition = "2021"
+authors = ["Brian Kellogg"]
+description = "Parse piped json output from other cmd line tools."
+repository = ""
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde_json = "*"
+
+[profile.release]
+lto = true
+panic = 'abort'
+opt-level = "s"
+debug = false
+rpath = false
+debug-assertions = false
+codegen-units = 1
+strip = true
