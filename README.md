@@ -6,11 +6,15 @@ Author: Brian Kellogg
 License: MIT
 Purpose: Extract json field values
 
+This program accepts piping line delimited json input via output from some previous command.
+
 Usage: 
-    fmd [--pretty | -p] ([--strings|-s] #) <file path> ([--depth | -d] #)
-    fmd --pretty --depth 3 --extensions \"exe,dll,pif,ps1,bat,com\"
-    fmd --pretty --depth 3 --extensions \"not:exe,dll,pif,ps1,bat,com\"
-        This will process all files that do not have the specified extensions.
+    cat logs.json | fve --delimiter \",\" --fields \"filename,hashes.md5,hashes.ssdeep\"
+        - comma seperated output
+    cat logs.json | fve -d \"\\n\" -f \"filename,hashes.md5,hashes.ssdeep\"
+        - output to a new line for each field
+    cat logs.json | fve -d \"\\t\" -f \"filename,hashes.md5,hashes.ssdeep\"
+        - tab seperated output
 
 Options:
     -d, --delimieter \",\"          Value to use to seperate field value output
