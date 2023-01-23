@@ -82,7 +82,6 @@ fn get_field(input: Value, name: &String) -> io::Result<(Value, bool, Value)> {
 
 fn get_fields_array(array: &Vec<Value>, names: Vec<&str>) -> io::Result<Vec<Value>> {
     let mut previous = Value::Null;
-    let mut js = Vec::new();
     let mut output: Vec<Value> = Vec::new();
     for entry in array {
         let mut is_array = false;
@@ -93,7 +92,7 @@ fn get_fields_array(array: &Vec<Value>, names: Vec<&str>) -> io::Result<Vec<Valu
         for n in fields {
             track_names.remove(0);
             if is_array && track_names.len() != 0 { // if there are no field names left assume we want to extract the last field
-                js = get_array(&value.clone(), &n.to_string())?;
+                let js = get_array(&value.clone(), &n.to_string())?;
                 results = get_fields_array(&js, track_names.clone())?;
             }
             (value, is_array, previous) = get_field(entry.clone(), &n.to_string())?;
@@ -120,8 +119,8 @@ fn join_values(array: &Vec<Value>, delim: &String) -> io::Result<String> {
 
 fn get_fields(input: String, fields: String, delim: &String) -> io::Result<()> {
     let split_fields = fields.split(",");
-    let orig_json = string_to_json(input)?;
-    let mut output = Vec::new();
+    let orig_json = string_to_json(input)?; // track original json object so we can start at the beginning of it for each field
+    let mut output = Vec::new(); // vec to build final output
     for field in split_fields {
         let mut names: Vec<&str> = field.split(".").collect();
         let mut track_names = names.clone(); // needed for when we hit a field that is an array
@@ -130,19 +129,17 @@ fn get_fields(input: String, fields: String, delim: &String) -> io::Result<()> {
         let mut value = Value::Null;
         let mut previous_value = Value::Null; // track previous json object
         let mut previous_name = String::new(); // track previously used json field name
-        let mut js = Vec::new();
-        let mut array_results: Vec<Value> = Vec::new();
         let mut array_values_concat = String::new();
         for n in names {
             if is_array { // detecting arrays is working, but logic is horrible I think, prob can be done better
-                js = get_array(&previous_value.clone(), &previous_name)?;
-                array_results = get_fields_array(&js, track_names.clone())?;
+                let js = get_array(&previous_value.clone(), &previous_name)?;
+                let array_results = get_fields_array(&js, track_names.clone())?;
                 array_values_concat = join_values(&array_results, delim)?;
-                break;
+                break; // if we hit an array we treat the rest of the parsing differently
             }
-            track_names.remove(0);
+            track_names.remove(0); // keep track of field names already used by removing them from this vec
             (value, is_array, previous_value) = get_field(json, &n.to_string())?;
-            previous_name = n.to_string();
+            previous_name = n.to_string(); // if we run into an array, we need the previously used field name to start parsing the array
             json = value.clone();
         }
         if is_array && value.is_null() { value = previous_value.clone() }
