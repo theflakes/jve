@@ -116,7 +116,7 @@ fn join_values(array: &Vec<Value>, delim: &String) -> io::Result<String> {
         results.push(v.to_string());
     }
     let results_concat = results.join(delim);
-    Ok(results_concat)
+    Ok(format!("\"{}\"", results_concat))
 }
 
 fn get_fields(input: String, fields: String, delim: &String) -> io::Result<()> {
