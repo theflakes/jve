@@ -38,7 +38,7 @@ fn string_to_json(input: String) -> io::Result<Value> {
     Ok(json)
 }
 
-fn get_array_values(input: &Value, name: &String)  -> io::Result<String> {
+fn get_array_values(input: Value, name: &String)  -> io::Result<String> {
     let mut value = String::new();
     if let Some(js) = input.as_array() {
         for j in js {
@@ -54,7 +54,7 @@ fn get_array_values(input: &Value, name: &String)  -> io::Result<String> {
     Ok(value)
 }
 
-fn get_field_value(json: &Value, name: &String)  -> io::Result<Value>{
+fn get_field_value(json: Value, name: &String)  -> io::Result<Value>{
     let value = match json.get(name) {
         Some(v) => v.to_owned(),
         None => Value::Null,
@@ -71,18 +71,52 @@ fn get_array(input: &Value, name: &String) -> io::Result<Vec<Value>> {
     Ok(js)
 }
 
-fn get_field(input: &Value, name: &String) -> io::Result<(Value, bool, Value)> {
+fn get_field(input: Value, name: &String) -> io::Result<(Value, bool, Value)> {
     let mut value =Value::Null;
     if let Some(js) = input[name].as_array() {
         return Ok((value, true, input.to_owned()))
     } else {
-        value = get_field_value(input, name)?;
+        value = get_field_value(input.clone(), name)?;
     }
-    Ok((value, false, input.to_owned()))
+    Ok((value, false, input))
 }
 
-fn walk_path(array: &Vec<Value>, names: Vec<&str>) {
+fn get_fields_array(array: &Vec<Value>, names: Vec<&str>) -> io::Result<Vec<Value>> {
+    let mut previous = Value::Null;
+    let mut is_array = false;
+    let mut js = Vec::new();
+    let mut output: Vec<Value> = Vec::new();
+    for entry in array {
+        let fields = names.clone();
+        let mut track_names = names.clone();
+        let mut results: Vec<Value> = Vec::new();
+        let mut value = Value::Null;
+        for n in fields {
+            track_names.remove(0);
+            if is_array {
+                js = get_array(&value.clone(), &n.to_string())?;
+                results = get_fields_array(&js, track_names.clone())?;
+            }
+            (value, is_array, previous) = get_field(entry.clone(), &n.to_string())?;
+        }
+        if !results.is_empty() {
+            for r in results {
+                output.push(r);
+            }
+            continue;
+        }
+        output.push(value);
+    }
+    Ok(output)
+}
 
+fn join_values(array: &Vec<Value>, delim: &String) -> io::Result<String> {
+    let mut results: Vec<String> = Vec::new();
+    for v in array {
+        results.push(v.to_string());
+    }
+    let results_concat = results.join(delim);
+    Ok(results_concat)
 }
 
 fn get_fields(input: String, fields: String, delim: &String) -> io::Result<()> {
@@ -91,25 +125,32 @@ fn get_fields(input: String, fields: String, delim: &String) -> io::Result<()> {
     let mut output = Vec::new();
     for field in split_fields {
         let mut names: Vec<&str> = field.split(".").collect();
+        let mut track_names = names.clone(); // needed for when we hit a field that is an array
+        let mut is_array = false; // if we hit a value that is an array, we need to treat it differently
         let mut json = orig_json.clone();
         let mut value = Value::Null;
-        let mut is_array = false;
-        let mut previous = Value::Null;
+        let mut previous_value = Value::Null;
+        let mut previous_name = String::new();
         let mut js = Vec::new();
+        let mut array_results: Vec<Value> = Vec::new();
+        let mut array_values_concat = String::new();
         for n in names {
             if is_array {
-                js = get_array(&value, &n.to_string())?;
-                walk_path(&js, names..clone());
-                if js.is_empty() {
-                    (value, is_array, previous) = get_field(&json, &n.to_string())?;
-                    continue;
-                }
-                value = serde_json::Value::String(get_array_values(&value, &n.to_string())?);
+                js = get_array(&previous_value.clone(), &previous_name)?;
+                array_results = get_fields_array(&js, track_names.clone())?;
+                array_values_concat = join_values(&array_results, delim)?;
+                break;
             }
-            (value, is_array, previous) = get_field(&json, &n.to_string())?;
+            track_names.remove(0);
+            (value, is_array, previous_value) = get_field(json, &n.to_string())?;
+            previous_name = n.to_string();
             json = value.clone();
         }
-        if is_array && value.is_null() { value = previous.clone() }
+        if is_array && value.is_null() { value = previous_value.clone() }
+        if is_array && !array_values_concat.is_empty() {
+            output.push(array_values_concat);
+            continue;
+        }
         output.push(value.to_string());
     }
     print_results(&output, delim);
