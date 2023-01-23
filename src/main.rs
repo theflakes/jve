@@ -1,8 +1,8 @@
 extern crate serde_json;
 
-use std::io::{self, Read, BufRead};
+use std::{io::{self, Read, BufRead}};
+use std::{mem, env, process};
 use serde_json::{Value, json};
-use std::{mem, env};
 
 
 fn print_results(output: &Vec<String>, delim: &String) {
@@ -155,6 +155,7 @@ fn get_fields(input: String, fields: String, delim: &String) -> io::Result<()> {
 
 fn get_args() -> io::Result<(String, String)> {
     let args: Vec<String> = env::args().collect();
+    if args.len() == 1 { print_help(); }
     let mut fields = String::new();
     let mut delim = String::new();
     let mut get_fields = false;
@@ -190,4 +191,28 @@ fn main() -> io::Result<()> {
         line.clear();
     }
     Ok(())
+}
+
+fn print_help() {
+    let help = "
+Author: Brian Kellogg
+License: MIT
+Purpose: Extract json field values
+
+Usage: 
+    fmd [--pretty | -p] ([--strings|-s] #) <file path> ([--depth | -d] #)
+    fmd --pretty --depth 3 --extensions \"exe,dll,pif,ps1,bat,com\"
+    fmd --pretty --depth 3 --extensions \"not:exe,dll,pif,ps1,bat,com\"
+        This will process all files that do not have the specified extensions.
+
+Options:
+    -d, --delimieter \",\"          Value to use to seperate field value output
+    -f, --fields \"a.b.c.d,a.b.e\"  Comma seperated list of fields in dot notation
+
+NOTE:   If a field is an array or the field name occurs in an array, 
+        this program will concatinate all array field values into a comma 
+        seperated quoted string across all arrays elements.
+";
+    println!("{}", help);
+    process::exit(1)   
 }
