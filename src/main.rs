@@ -199,14 +199,16 @@ Author: Brian Kellogg
 License: MIT
 Purpose: Extract json field values
 
+JVE - Json Value Extractor
+
 This program accepts piping line delimited json input via output from some previous command.
 
 Usage: 
-    cat logs.json | fve --delimiter \",\" --fields \"filename,hashes.md5,hashes.ssdeep\"
+    cat logs.json | jve --delimiter \",\" --fields \"filename,hashes.md5,hashes.ssdeep\"
         - comma seperated output
-    cat logs.json | fve -d \"\\n\" -f \"filename,hashes.md5,hashes.ssdeep\"
+    cat logs.json | jve -d \"\\n\" -f \"filename,hashes.md5,hashes.ssdeep\"
         - output to a new line for each field
-    cat logs.json | fve -d \"\\t\" -f \"filename,hashes.md5,hashes.ssdeep\"
+    cat logs.json | jve -d \"\\t\" -f \"filename,hashes.md5,hashes.ssdeep\"
         - tab seperated output
 
 Options:
