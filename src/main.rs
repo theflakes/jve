@@ -92,7 +92,7 @@ fn get_fields_array(array: &Vec<Value>, names: Vec<&str>) -> io::Result<Vec<Valu
         let mut value = Value::Null;
         for n in fields {
             track_names.remove(0);
-            if is_array && track_names.len() != 0 {
+            if is_array && track_names.len() != 0 { // if there are no field names left assume we want to extract the last field
                 js = get_array(&value.clone(), &n.to_string())?;
                 results = get_fields_array(&js, track_names.clone())?;
             }
@@ -128,13 +128,13 @@ fn get_fields(input: String, fields: String, delim: &String) -> io::Result<()> {
         let mut is_array = false; // if we hit a value that is an array, we need to treat it differently
         let mut json = orig_json.clone();
         let mut value = Value::Null;
-        let mut previous_value = Value::Null;
-        let mut previous_name = String::new();
+        let mut previous_value = Value::Null; // track previous json object
+        let mut previous_name = String::new(); // track previously used json field name
         let mut js = Vec::new();
         let mut array_results: Vec<Value> = Vec::new();
         let mut array_values_concat = String::new();
         for n in names {
-            if is_array {
+            if is_array { // detecting arrays is working, but logic is horrible I think, prob can be done better
                 js = get_array(&previous_value.clone(), &previous_name)?;
                 array_results = get_fields_array(&js, track_names.clone())?;
                 array_values_concat = join_values(&array_results, delim)?;
