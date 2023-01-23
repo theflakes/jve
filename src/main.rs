@@ -72,28 +72,27 @@ fn get_array(input: &Value, name: &String) -> io::Result<Vec<Value>> {
 }
 
 fn get_field(input: Value, name: &String) -> io::Result<(Value, bool, Value)> {
-    let mut value =Value::Null;
+    let mut is_array = false;
     if let Some(js) = input[name].as_array() {
-        return Ok((value, true, input.to_owned()))
-    } else {
-        value = get_field_value(input.clone(), name)?;
+        is_array = true;
     }
-    Ok((value, false, input))
+    let value = get_field_value(input.clone(), name)?;
+    Ok((value, is_array, input))
 }
 
 fn get_fields_array(array: &Vec<Value>, names: Vec<&str>) -> io::Result<Vec<Value>> {
     let mut previous = Value::Null;
-    let mut is_array = false;
     let mut js = Vec::new();
     let mut output: Vec<Value> = Vec::new();
     for entry in array {
+        let mut is_array = false;
         let fields = names.clone();
         let mut track_names = names.clone();
         let mut results: Vec<Value> = Vec::new();
         let mut value = Value::Null;
         for n in fields {
             track_names.remove(0);
-            if is_array {
+            if is_array && track_names.len() != 0 {
                 js = get_array(&value.clone(), &n.to_string())?;
                 results = get_fields_array(&js, track_names.clone())?;
             }
