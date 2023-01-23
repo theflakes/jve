@@ -212,7 +212,7 @@ Usage:
         - tab seperated output
 
 Options:
-    -d, --delimieter \",\"          Value to use to seperate field value output
+    -d, --delimiter \",\"          Value to use to seperate field value output
     -f, --fields \"a.b.c.d,a.b.e\"  Comma seperated list of fields in dot notation
 
 NOTE:   If a field is an array or the field name occurs in an array, 
