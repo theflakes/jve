@@ -24,5 +24,5 @@ Options:
 
 NOTE:   If a field is an array or the field name occurs in an array, 
         this program will concatinate all array field values into a comma 
-        seperated quoted string across all arrays elements.
+        seperated quoted string across all array elements.
 ```
