@@ -1,6 +1,6 @@
 extern crate serde_json;
 
-use std::{io::{self, Read, BufRead}};
+use std::{io::{self, Read, BufRead}, result};
 use std::{mem, env, process};
 use serde_json::{Value, json};
 
@@ -101,12 +101,8 @@ fn get_fields_array(array: &Vec<Value>, names: Vec<&str>) -> io::Result<Vec<Valu
 }
 
 fn join_values(array: &Vec<Value>, delim: &String) -> io::Result<String> {
-    let mut results: Vec<String> = Vec::new();
-    for v in array {
-        results.push(v.to_string());
-    }
-    let results_concat = results.join(delim);
-    Ok(format!("\"{}\"", results_concat))
+    let temp: Vec<String> = array.into_iter().map(|n| n.to_string()).collect();
+    Ok(format!("\"{}\"", temp.join(delim)))
 }
 
 fn get_fields(input: String, fields: String, delim: &String) -> io::Result<()> {
