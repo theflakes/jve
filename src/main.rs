@@ -6,23 +6,15 @@ use serde_json::{Value, json};
 
 
 fn print_results(output: &Vec<String>, delim: &String) {
-    let mut results = String::new();
-    for o in output {
-        if delim.eq("\\n") {
-            if !o.is_empty() { println!("{}", o); }
-            continue;
-        }
-        results.push_str(o);
-        if delim.eq("\\t") {
-            results.push('\t');
-            continue;
-        }
-        results.push_str(delim);
+    if delim.eq("\\n") {
+        output.iter().for_each(|o| println!("{}", o));
+        return;
     }
-    if !results.is_empty() { 
-        for _r in 0..delim.len() { results.pop(); }
-        println!("{}", results);
+    if delim.eq("\\t") {
+        println!("{}", output.join("\t"));
+        return;
     }
+    println!("{}", output.join(delim));
 }
 
 fn string_to_json(input: String) -> io::Result<Value> {
