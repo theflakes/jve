@@ -1,8 +1,8 @@
 extern crate serde_json;
 
-use std::{io::{self, Read, BufRead}, result};
-use std::{mem, env, process};
-use serde_json::{Value, json};
+use std::{io::{self, BufRead}};
+use std::{env, process};
+use serde_json::{Value};
 
 
 fn print_results(output: &Vec<String>, delim: &String) {
@@ -22,7 +22,7 @@ fn string_to_json(input: String) -> io::Result<Value> {
         let this = serde_json::from_str(&input);
         match this {
             Ok(t) => t,
-            Err(e) => {
+            Err(_e) => {
                 return Ok(Value::Null);
             },
         }
@@ -30,6 +30,7 @@ fn string_to_json(input: String) -> io::Result<Value> {
     Ok(json)
 }
 
+/*
 fn get_array_values(input: Value, name: &String)  -> io::Result<String> {
     let mut value = String::new();
     if let Some(js) = input.as_array() {
@@ -45,6 +46,7 @@ fn get_array_values(input: Value, name: &String)  -> io::Result<String> {
     }
     Ok(value)
 }
+*/
 
 fn get_field_value(json: Value, name: &String)  -> io::Result<Value>{
     let value = match json.get(name) {
@@ -65,7 +67,7 @@ fn get_array(input: &Value, name: &String) -> io::Result<Vec<Value>> {
 
 fn get_field(input: Value, name: &String) -> io::Result<(Value, bool, Value)> {
     let mut is_array = false;
-    if let Some(js) = input[name].as_array() {
+    if let Some(_js) = input[name].as_array() {
         is_array = true;
     }
     let value = get_field_value(input.clone(), name)?;
@@ -73,7 +75,6 @@ fn get_field(input: Value, name: &String) -> io::Result<(Value, bool, Value)> {
 }
 
 fn get_fields_array(array: &Vec<Value>, names: Vec<&str>) -> io::Result<Vec<Value>> {
-    let mut previous = Value::Null;
     let mut output: Vec<Value> = Vec::new();
     for entry in array {
         let mut is_array = false;
@@ -87,7 +88,7 @@ fn get_fields_array(array: &Vec<Value>, names: Vec<&str>) -> io::Result<Vec<Valu
                 let js = get_array(&value.clone(), &n.to_string())?;
                 results = get_fields_array(&js, track_names.clone())?;
             }
-            (value, is_array, previous) = get_field(entry.clone(), &n.to_string())?;
+            (value, is_array, _) = get_field(entry.clone(), &n.to_string())?;
         }
         if !results.is_empty() {
             for r in results {
@@ -110,7 +111,7 @@ fn get_fields(input: String, fields: String, delim: &String) -> io::Result<()> {
     let orig_json = string_to_json(input)?; // track original json object so we can start at the beginning of it for each field
     let mut output = Vec::new(); // vec to build final output
     for field in split_fields {
-        let mut names: Vec<&str> = field.split(".").collect();
+        let names: Vec<&str> = field.split(".").collect();
         let mut track_names = names.clone(); // needed for when we hit a field that is an array
         let mut is_array = false; // if we hit a value that is an array, we need to treat it differently
         let mut json = orig_json.clone();
