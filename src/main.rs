@@ -30,24 +30,6 @@ fn string_to_json(input: String) -> io::Result<Value> {
     Ok(json)
 }
 
-/*
-fn get_array_values(input: Value, name: &String)  -> io::Result<String> {
-    let mut value = String::new();
-    if let Some(js) = input.as_array() {
-        for j in js {
-            let temp = match j.get(name) {
-                Some(v) => v.to_string(),
-                None => "".to_string(),
-            };
-            value.push_str(&temp);
-            value.push_str(",");
-        }
-        value.pop();
-    }
-    Ok(value)
-}
-*/
-
 fn get_field_value(json: Value, name: &String)  -> io::Result<Value>{
     let value = match json.get(name) {
         Some(v) => v.to_owned(),
