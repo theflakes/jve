@@ -153,13 +153,13 @@ fn main() -> io::Result<()> {
     let (fields, delim) = &get_args()?;
 
     let stdin = io::stdin();
-    let mut stdin = stdin.lock(); // locking is optional
-    let mut line = String::new();
 
-    while let Ok(n_bytes) = stdin.read_line(&mut line) {
-        if n_bytes == 0 { break }
-        get_fields(line.to_owned(), fields.to_string(), delim)?;
-        line.clear();
+    for line in stdin.lock().lines() {
+        let l = match line {
+            Ok(o) => o,
+            Err(_) => continue,
+        };
+        get_fields(l, fields.to_string(), delim)?;
     }
     Ok(())
 }
