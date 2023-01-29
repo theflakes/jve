@@ -1,6 +1,6 @@
 extern crate serde_json;
 
-use std::io::{self, Split};
+use std::io;
 use std::{env, process};
 use serde_json::Value;
 
