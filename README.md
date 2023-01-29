@@ -23,8 +23,8 @@ Options:
     -f, --fields "a.b.c.d,a.b.e"  Comma seperated list of fields in dot notation
 
 NOTE:   If a field is an array or the field name occurs in an array, 
-        this program will concatinate all array field values into a comma 
-        seperated quoted string across all array elements.
+        this program will concatinate all array field values into a 
+        delimited quoted string across all array elements.
 ```
 #### Example output
 ```
