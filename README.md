@@ -26,13 +26,62 @@ NOTE:   If a field is an array or the field name occurs in an array,
         this program will concatinate all array field values into a comma 
         seperated quoted string across all array elements.
 ```
-#### Example Output
+#### Example output
 ```
 fmd.exe .\fmd.exe | jve -d "," -f "filename,hashes.md5,entropy,binary.sections.sections.name,binary.sections.sections.entropy,binary.imports.imports.lib,binary.imports.imports.count"
 
+filename,hashes.md5,entropy,binary.sections.sections.name,binary.sections.sections.entropy,binary.imports.imports.lib,binary.imports.imports.names
 "fmd.exe","729e4a560c865f7cc28725337abcb4a0",6.3832226,"".text",".rdata",".data",".pdata","_RDATA",".reloc"","6.2971563,5.5931087,2.0857084,5.816629,3.3070078,5.4327927",""KERNEL32.dll","ADVAPI32.dll","bcrypt.dll"","101,2,3"
 ```
-#### Log for above output
+#### Example output using new line as a delimiter recursing through sub directories
+```
+fmd.exe c:\ -d 2 | jve -d "\n" -f "filename,hashes.md5,entropy,binary.sections.sections.name,binary.sections.sections.entropy,ads.name,ads.bytes,ads.first_256_bytes,binary.imports.imports.lib,binary.imports.imports.names"
+
+[*] filename: "$WINRE_BACKUP_PARTITION.MARKER"
+[*] hashes.md5: "d41d8cd98f00b204e9800998ecf8427e"
+[*] entropy: 0.0
+[*] binary.sections.sections.name: ""
+[*] binary.sections.sections.entropy: ""
+[*] ads.name: """"
+[*] ads.bytes: "0"
+[*] ads.first_256_bytes: """"
+[*] binary.imports.imports.lib: ""
+[*] binary.imports.imports.names: ""
+
+[*] filename: "desktop.ini"
+[*] hashes.md5: "6383522c180badc4e1d5c30a5c4f4913"
+[*] entropy: 3.5208218
+[*] binary.sections.sections.name: ""
+[*] binary.sections.sections.entropy: ""
+[*] ads.name: """"
+[*] ads.bytes: "174"
+[*] ads.first_256_bytes: ""??????\r.\n.[...S.h.e.l.l.C.l.a.s.s.I.n.f.o.].\r.\n.L.o.c.a.l.i.z.e.d.R.e.s.o.u.r.c.e.N.a.m.e.=.@.%.S.y.s.t.e.m.R.o.o.t.%.\\.s.y.s.t.e.m.3.2.\\.s.h.e.l.l.3.2...d.l.l.,.-.2.1.7.8.1.\r.\n.""
+[*] binary.imports.imports.lib: ""
+[*] binary.imports.imports.names: ""
+
+[*] filename: "desktop.ini"
+[*] hashes.md5: "5b8a2ba3138573583ff9e0158096ec48"
+[*] entropy: 3.5208218
+[*] binary.sections.sections.name: ""
+[*] binary.sections.sections.entropy: ""
+[*] ads.name: """"
+[*] ads.bytes: "174"
+[*] ads.first_256_bytes: ""??????\r.\n.[...S.h.e.l.l.C.l.a.s.s.I.n.f.o.].\r.\n.L.o.c.a.l.i.z.e.d.R.e.s.o.u.r.c.e.N.a.m.e.=.@.%.S.y.s.t.e.m.R.o.o.t.%.\\.s.y.s.t.e.m.3.2.\\.s.h.e.l.l.3.2...d.l.l.,.-.2.1.8.1.7.\r.\n.""
+[*] binary.imports.imports.lib: ""
+[*] binary.imports.imports.names: ""
+
+[*] filename: "RunAsService.exe"
+[*] hashes.md5: "4b92bd03d0c1e1f793ed1b499534211b"
+[*] entropy: 4.623817
+[*] binary.sections.sections.name: "".text"\n".rsrc"\n".reloc""
+[*] binary.sections.sections.entropy: "4.7316236\n4.3263397\n0.081539415"
+[*] ads.name: """\n"evil"\n"SmartScreen"\n"Zone.Identifier""
+[*] ads.bytes: "23552\n34\n7\n123"
+[*] ads.first_256_bytes: ""MZ???.\u0003...\u0004...??????..???.......@...................................???...\u000e\u001f???\u000e.???\t???!???\u0001L???!This program cannot be run in DOS mode.\r\r\n$.......PE..L\u0001\u0003.B??????Y........???.\u0002\u0001\u000b\u00010..P...\n......???o... ...???....@.. ...\u0002..\u0004.......\u0004........???...\u0002......\u0003.@???..\u0010..\u0010....\u0010..\u0010......\u0010.........."\n"\"this is hiding info in an ADS\" \r\n"\n"Anaheim"\n"[ZoneTransfer]\r\nZoneId=3\r\nReferrerUrl=http://runasservice.com/\r\nHostUrl=http://runasservice.com/Download/RunAsService.exe\r\n""
+[*] binary.imports.imports.lib: ""mscoree.dll""
+[*] binary.imports.imports.names: "["_CorExeMain"]"
+```
+#### Example log parsed by JVE -> using the [File Meta Data tool](https://github.com/theflakes/fmd)
 ```
 {
   "runtime_env": {

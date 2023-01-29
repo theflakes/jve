@@ -1,20 +1,24 @@
 extern crate serde_json;
 
-use std::io;
+use std::io::{self, Split};
 use std::{env, process};
 use serde_json::Value;
 
 
-fn print_results(output: &Vec<String>, delim: &String) {
+fn print_results(output: &Vec<String>, split_fields: Vec<&str>, delim: &String) {
     if delim.eq("\\n") {
-        output.iter().for_each(|o| println!("{}", o));
-        return;
+        split_fields.iter().zip(output.iter())
+            .map(|(a, b)| format!("{}: {}", a, b))
+            .for_each(|o| println!("[*] {}", o));
+        println!();
+        return
     }
     if delim.eq("\\t") {
         println!("{}", output.join("\t"));
-        return;
+        return
     }
     println!("{}", output.join(delim));
+    return
 }
 
 fn string_to_json(input: String) -> io::Result<Value> {
@@ -30,7 +34,7 @@ fn string_to_json(input: String) -> io::Result<Value> {
     Ok(json)
 }
 
-fn get_field_value(json: Value, name: &String)  -> io::Result<Value>{
+fn get_field_value(json: Value, name: &String)  -> io::Result<Value> {
     let value = match json.get(name) {
         Some(v) => v.to_owned(),
         None => Value::Null,
@@ -89,10 +93,10 @@ fn join_values(array: &Vec<Value>, delim: &String) -> io::Result<String> {
 }
 
 fn get_fields(input: String, fields: String, delim: &String) -> io::Result<()> {
-    let split_fields = fields.split(",");
+    let split_fields: Vec<&str> = fields.split(",").collect();
     let orig_json = string_to_json(input)?; // track original json object so we can start at the beginning of it for each field
     let mut output = Vec::new(); // vec to build final output
-    for field in split_fields {
+    for field in split_fields.iter() {
         let names: Vec<&str> = field.split(".").collect();
         let mut track_names = names.clone(); // needed for when we hit a field that is an array
         let mut is_array = false; // if we hit a value that is an array, we need to treat it differently
@@ -120,7 +124,7 @@ fn get_fields(input: String, fields: String, delim: &String) -> io::Result<()> {
         }
         output.push(value.to_string());
     }
-    print_results(&output, delim);
+    print_results(&output, split_fields, delim);
     Ok(())
 }
 
@@ -153,6 +157,8 @@ fn main() -> io::Result<()> {
     let (fields, delim) = &get_args()?;
 
     let stdin = io::stdin();
+
+    if !delim.eq("\\n") {println!("{}", &fields.replace(",", &delim))}
 
     for line in stdin.lines() {
         let l = match line {
