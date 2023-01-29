@@ -1,6 +1,6 @@
 extern crate serde_json;
 
-use std::{io::{self, BufRead}};
+use std::{io::{self}};
 use std::{env, process};
 use serde_json::{Value};
 
