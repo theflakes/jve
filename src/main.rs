@@ -1,8 +1,8 @@
 extern crate serde_json;
 
-use std::{io::{self}};
+use std::io;
 use std::{env, process};
-use serde_json::{Value};
+use serde_json::Value;
 
 
 fn print_results(output: &Vec<String>, delim: &String) {
