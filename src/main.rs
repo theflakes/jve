@@ -154,7 +154,7 @@ fn main() -> io::Result<()> {
 
     let stdin = io::stdin();
 
-    for line in stdin.lock().lines() {
+    for line in stdin.lines() {
         let l = match line {
             Ok(o) => o,
             Err(_) => continue,
