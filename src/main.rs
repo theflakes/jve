@@ -2,8 +2,7 @@ extern crate serde_json;
 
 use std::io;
 use std::{env, process};
-use serde_json::{Value, Map, Error};
-use itertools::Itertools;
+use serde_json::{Value};
 
 fn print_results(output: &Vec<String>, split_fields: Vec<&str>, delim: &String) {
     if delim.eq("\\n") {
@@ -154,10 +153,6 @@ fn traverse_json(json: &Value, path: &mut Vec<String>, result: &mut Vec<String>)
     }
 }
 
-fn unescape(s: &str) -> serde_json::Result<String> {
-    serde_json::from_str(&format!("\"{}\"", s))
-}
-
 fn get_value(log: &Value, field_path: &str) -> io::Result<String> {
     let fields = field_path.split('.').collect::<Vec<&str>>();
     let mut value = log;
@@ -200,7 +195,6 @@ fn main() -> io::Result<()> {
     }
     
     let mut uniques: Vec<String> = Vec::new();
-    let field_path = field_name.split(".");
 
     for line in stdin.lines() {
         let l = match line {
