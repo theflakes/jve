@@ -11,27 +11,93 @@ JVE - Json Value Extractor
 This program accepts piping line delimited json input via output from some previous command.
 
 Usage: 
-    cat logs.json | jve --delimiter "," --fields "filename,hashes.md5,hashes.ssdeep"
+    cat logs.json | jve --delimiter \",\" --fields \"filename,hashes.md5,hashes.ssdeep\"
         - comma seperated output
-    cat logs.json | jve -d "\n" -f "filename,hashes.md5,hashes.ssdeep"
+    cat logs.json | jve -d \"\\n\" -f \"filename,hashes.md5,hashes.ssdeep\"
         - output to a new line for each field
-    cat logs.json | jve -d "\t" -f "filename,hashes.md5,hashes.ssdeep"
+    cat logs.json | jve -d \"\\t\" -f \"filename,hashes.md5,hashes.ssdeep\"
         - tab seperated output
+    cat logs.json | jve --unique
+        - Collect and print a uniqued list of all field names found in all logs
+        - Nested field names will be dot delimited
+    cat logs.json | jve --unique --name \"field_name\"
+        - Collect and print a uniqued list of all values found in the \"field_name\" field
 
 Options:
-    -d, --delimiter ","           Value to use to seperate field value output
-    -f, --fields "a.b.c.d,a.b.e"  Comma seperated list of fields in dot notation
+    -d, --delimiter ','             Value to use to seperate field value output
+    -f, --fields 'a.b.c.d,a.b.e'    Comma seperated list of fields in dot notation
+    -n, --name 'name_of_field'      Name of the field you want all unique valued from
+                                    - Must be used with the '--unique' argument
+    -u, --unique                    Get all unique field names or unique values 
+                                    of a specified field name if the '--name' argument
+                                    is also specified
+                                    - Nested field names will be dot delimited
 
 NOTE:   If a field is an array or the field name occurs in an array, 
-        this program will concatinate all array field values into a 
+        this program will concatenate all array field values into a 
         delimited quoted string across all array elements.
 ```
-#### Example output
+### Example output
 ```
 fmd.exe .\fmd.exe | jve -d "," -f "filename,hashes.md5,entropy,binary.sections.sections.name,binary.sections.sections.entropy,binary.imports.imports.lib,binary.imports.imports.count"
 
 filename,hashes.md5,entropy,binary.sections.sections.name,binary.sections.sections.entropy,binary.imports.imports.lib,binary.imports.imports.names
 "fmd.exe","729e4a560c865f7cc28725337abcb4a0",6.3832226,"".text",".rdata",".data",".pdata","_RDATA",".reloc"","6.2971563,5.5931087,2.0857084,5.816629,3.3070078,5.4327927",""KERNEL32.dll","ADVAPI32.dll","bcrypt.dll"","101,2,3"
+```
+#### Example output parsing unique values from a common field across all JSON logs
+```
+cat .\files.json | .\jve -u --name "hashes.md5"
+
+"06e8f7e6ddd666dbd323f7d9210f91ae"
+"089d48a11bff0df720f1079f5dc58a83"
+"08c99274edaa8548232f0498fec0bcf4"
+"0e54be9771282f8eaa026b967006f41b"
+"0fa26b6c98419b5e7c00efffb5835612"
+"2246f34c9f9cbc23697d4498391c19a5"
+"2ddd5dbcb911bcfd13123aedb84584be"
+"3a361ad38db9afe1997177a290607d22"
+"3a37312509712d4e12d27240137ff377"
+"3a6ccb171c990074990a2dd10e6014c0"
+"3b960da228cc489b622697659c885d64"
+"40755e75c0a31ed4c87fea0456c38b27"
+"420ae295c6a48e05bbe7feb6e4f5e1b1"
+"449f2e76e519890a212814d96ce67d64"
+"50a956778107a4272aae83c86ece77cb"
+"59071590099d21dd439896592338bf95"
+"5d42dddda9951546c9d43f0062c94d39"
+"614d318c54542cd30a472965ac2e3c6e"
+"6576cae679fffc7f8f296fe9a1b3f867"
+"6fc234ad3752e1267b34fb12bcd6718b"
+"881dfac93652edb0a8228029ba92d0f5"
+"a1bce84d1baa50b883a8aaf0fb154d6d"
+"b441cf59b5a64f74ac3bed45be9fadfc"
+"b6acbeb59959aa5412a7565423ea7bab"
+"bafb57f3a2d653461cde7956e6ace690"
+"cd9d358a1c3e634f13f7fde433feb483"
+"cda629e9edf62c0efb17fbea1e32dad0"
+"cdc02ae6a5852cf0bcfdea4544ebdcab"
+"d30f32128c338c3a6ca05ff5ae7a4b7f"
+"d41d8cd98f00b204e9800998ecf8427e"
+```
+#### Example output parsing a JSON nested structure a common field across all JSON logs
+```
+cat .\files.json | .\jve -u --name "hashes"
+
+{"md5":"06e8f7e6ddd666dbd323f7d9210f91ae","sha1":"883ae527ee83ed9346cd82c33dfc0eb97298dc14","sha256":"8301e344371b0753d547b429c5fe513908b1c9813144f08549563ac7f4d7da68","ssdeep":"12:QZsiL5wmHOlDmo0qml3lDmo0qmZclLwr2FlDmo0IWUol94klrgl2FlDmo0qjKAZY:QCGwv4o0x34o02lLwiF4o0ZvbUsF4o0Z"}
+{"md5":"089d48a11bff0df720f1079f5dc58a83","sha1":"88f1c647378b5b22ebadb465dc80fcfd9e7b97c9","sha256":"a9e8ad0792b546a4a8ce49eda82b327ad9581141312efec3ac6f2d3ad5a05f17","ssdeep":"12:QZsiL5wmHOlDmo0qmEclLwr2FlDmo0IWhvXiTpKUAa0C6wyEZwyEG:QCGwv4o0RlLwiF4o0hX+wDXZWX"}
+{"md5":"08c99274edaa8548232f0498fec0bcf4","sha1":"9535e4ebce9ec86680fc4fc782dda211b5d14427","sha256":"9ff7cf330c230565d792c7d3316352d018f6b403fc0f5c82f32419a4d7d38bd1","ssdeep":"3:YCQta6Se+RfE9qHgJHqSJn:YCQta5VsoHgJqSJ"}
+{"md5":"0e54be9771282f8eaa026b967006f41b","sha1":"fac9b46269c4e9c323ff9b0f6c2c32b94300f901","sha256":"271458a2755e266a0c86b0ff4fee20a2f58f99c44c88e4ba51eb6a58105b2e36","ssdeep":"12:8mNgXccldu/UbdpYuYRfzpewmJ5uSc3AtbOwYRfzpewm:8EgXflAAd2Jzswm6Scwt2Jzswm"}
+{"md5":"0fa26b6c98419b5e7c00efffb5835612","sha1":"d904d6683a548b03950d94da33cdfccbb55a9bc7","sha256":"4094d158e3b0581ba433a46d0dce62f99d8c0fd1b50bb4d0517ddc0a4a1fde24","ssdeep":"6:TMV08iTRH/iNBKNxG+KNhkF2deqYutDSA8UcXq2SUVrj:TMG8ip/ifO8+OhkMQqYaOA8UnHUVrj"}
+{"md5":"2246f34c9f9cbc23697d4498391c19a5","sha1":"66257d16876f175e307f336d876f4643ea320152","sha256":"3780593830750933d4b8da35bf02cbe2c31eb8f96ab970db9d350f02f68ad0cd","ssdeep":"12:4cW/HUKspeRY7xNhaKzM/79yo+ermAs40slEAqyaZVKo:RGHUKAgYdaKz87soxrr0qEAqnZVKo"}
+{"md5":"2ddd5dbcb911bcfd13123aedb84584be","sha1":"15fa243e48da777ee4fb69d50f8c269dff7134be","sha256":"ea1ba269f9edf809419a55e34ea454d745201fa62124dace4b0663f9bc6c7d91","ssdeep":"12:jLZRg/rmZbyz1eLXrE8PjMAlj1zqBJAyRAmXWjAPJe69AZB85pCuygk14GuybgQx:jsmsz1AXrMY1XyPWjeJeT6pC+GuyQI"}
+{"md5":"3a361ad38db9afe1997177a290607d22","sha1":"38af4963f157f0df31b4c38f0ae859ec94202cc4","sha256":"06a4c15b779e0d06c8b8981cfca14cb7bbff55781818c9e2f9a4353fd8140c13","ssdeep":"12:8bbwaZkKF+QbwaZ9YjAF4FgNNlUCfJIWD4t2YlYM/OqCQX8KzLbXkQ/V4VQE5meW:8bMapMa8AF4ejlfJz/M/zvXD/K55meN"}
+{"md5":"3a37312509712d4e12d27240137ff377","sha1":"30ced927e23b584725cf16351394175a6d2a9577","sha256":"b029393ea7b7cf644fb1c9f984f57c1980077562ee2e15d0ffd049c4c48098d3","ssdeep":"6:QyqRsioTA5wmHOlRaQmZWGokJqAMhAlt4DAlLwkAl2FlRaQmZWGokJISlVl9:QZsiL5wmHOlDmo0qmt4clLwr2FlDmo0d"}
+{"md5":"3a6ccb171c990074990a2dd10e6014c0","sha1":"9ca2e6a0b081dc289cc8dafa779f5928685dabb9","sha256":"6fbc71117b289d072b90f304e631b85ebd974871f92cfc5318c5139ad512f594","ssdeep":"48:Lr99rPZykNzqnLdDeB80T1Sba8fdixsYSE+so4hC7X9G9ajOmth18g3hA2ULjW:Lr99rZnLBVTf8fdixszsoN518g3hILjW"}
+{"md5":"3b960da228cc489b622697659c885d64","sha1":"00686a12f1a43501f6eea2140da9be141a11bd3b","sha256":"a4234e2cf44c57609fd7cb0f9f0a33ee136b542fba5121ac02d85b38fb2ea02d","ssdeep":"12:QZsiL5wmHOlDmo0qmC6clLwr2FlDmo0IWZS8s+iTpKUdDsWIstn:QCGwv4o04lLwiF4o03+w4Ian"}
+{"md5":"40755e75c0a31ed4c87fea0456c38b27","sha1":"ce5b69bddabc92cc7cebd116964785184cb8c403","sha256":"bf695891725540167c7db0bbf652468dd6139c61361102a8a5cf10111a4c6377","ssdeep":"48:k/8kwxoBytpFuVb2V3sHwxoBytLFuVb2V:kvwxsytpFuVb2V3EwxsytLFuVb2V"}
+{"md5":"420ae295c6a48e05bbe7feb6e4f5e1b1","sha1":"b63c804e7e66e2edadc5700e0216b1b7fff7f716","sha256":"0af3ad72af17e1321674025bd8e8e971c16b0d92b6d302c080a1f57661615b14","ssdeep":"6:k3fcPmIpdOMkZpW2RXQ/pMAooJPhZYaDxZSJzXxQKcRSXmRsiAuK:kUPxWG2exBb5DlZ+jxQh2mRsUK"}
+{"md5":"449f2e76e519890a212814d96ce67d64","sha1":"a316a38e1a8325bef6f68f18bc967b9aaa8b6ebd","sha256":"48a6703a09f1197ee85208d5821032b77d20b3368c6b4de890c44fb482149cf7","ssdeep":"12:QZsiL5wmHyL0bO4fgL0bO40clLwr2FlDmo0IWdY:QCGwFgAgdlLwiF4o01Y"}
+{"md5":"50a956778107a4272aae83c86ece77cb","sha1":"10bce7ea45077c0baab055e0602eef787dba735e","sha256":"b287b639f6edd612f414caf000c12ba0555adb3a2643230cbdd5af4053284978","ssdeep":"12:QZsiL5wmHOlDmo0qmclDmo0qmJclLwr2FlDmo0IWVvklrgl2FlDmo0qjKArn:QCGwv4o0o4o0mlLwiF4o090UsF4o01Ar"}
 ```
 #### Example output using new line as a delimiter recursing through sub directories
 ```
