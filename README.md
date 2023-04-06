@@ -11,17 +11,17 @@ JVE - Json Value Extractor
 This program accepts piping line delimited json input via output from some previous command.
 
 Usage: 
-    cat logs.json | jve --delimiter \",\" --fields \"filename,hashes.md5,hashes.ssdeep\"
+    cat logs.json | jve --delimiter "," --fields "filename,hashes.md5,hashes.ssdeep"
         - comma seperated output
-    cat logs.json | jve -d \"\\n\" -f \"filename,hashes.md5,hashes.ssdeep\"
+    cat logs.json | jve -d "\n" -f "filename,hashes.md5,hashes.ssdeep"
         - output to a new line for each field
-    cat logs.json | jve -d \"\\t\" -f \"filename,hashes.md5,hashes.ssdeep\"
+    cat logs.json | jve -d "\t" -f "filename,hashes.md5,hashes.ssdeep"
         - tab seperated output
     cat logs.json | jve --unique
         - Collect and print a uniqued list of all field names found in all logs
         - Nested field names will be dot delimited
-    cat logs.json | jve --unique --name \"field_name\"
-        - Collect and print a uniqued list of all values found in the \"field_name\" field
+    cat logs.json | jve --unique --name "field_name"
+        - Collect and print a uniqued list of all values found in the "field_name" field
 
 Options:
     -d, --delimiter ','             Value to use to seperate field value output
