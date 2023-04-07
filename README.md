@@ -26,11 +26,11 @@ Usage:
 Options:
     -d, --delimiter ','             Value to use to seperate field value output
     -f, --fields 'a.b.c.d,a.b.e'    Comma seperated list of fields in dot notation
-    -n, --name 'name_of_field'      Name of the field you want all unique valued from
+    -n, --name 'name_of_field'      Name of the field you want all unique values from
                                     - Must be used with the '--unique' argument
-    -u, --unique                    Get all unique field names or unique values 
-                                    of a specified field name if the '--name' argument
-                                    is also specified
+    -u, --unique                    Get all unique field names 
+                                    or unique values of a specified field name if 
+                                    the '--name' argument is also specified
                                     - Nested field names will be dot delimited
 
 NOTE:   If a field is an array or the field name occurs in an array, 
