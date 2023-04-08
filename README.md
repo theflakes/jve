@@ -37,6 +37,12 @@ NOTE:   If a field is an array or the field name occurs in an array,
         this program will concatenate all array field values into a 
         delimited quoted string across all array elements.
 ```
+### To Compile on Linux for static linking
+```
+sudo apt install musl-tools
+rustup target add x86_64-unknown-linux-musl
+cargo build --target x86_64-unknown-linux-musl --release
+```
 ### Example output
 ```
 fmd.exe .\fmd.exe | jve -d "," -f "filename,hashes.md5,entropy,binary.sections.sections.name,binary.sections.sections.entropy,binary.imports.imports.lib,binary.imports.imports.count"
