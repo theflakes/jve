@@ -179,12 +179,27 @@ fn print_uniques(mut uniques: Vec<String>) {
     print_vec(&uniques);
 }
 
+fn key_exists(json: &Value, key: &str) -> bool {
+    let keys: Vec<&str> = key.split('.').collect();
+    let mut current_json = json;
+
+    for k in keys {
+        match current_json.get(k) {
+            Some(val) => current_json = val,
+            None => return false,
+        }
+    }
+
+    true
+}
+
 fn main() -> io::Result<()> {
     let (
             fields, 
             delim, 
             get_uniques, 
-            field_name
+            field_name,
+            get_values
         ) = get_args()?;
 
     let stdin = io::stdin();
@@ -207,7 +222,12 @@ fn main() -> io::Result<()> {
                 let mut path: Vec<String> = Vec::new();
                 traverse_json(&log, &mut path, &mut uniques);
             } else {
-                uniques.push(get_value(&log, &field_name)?);
+                if get_values {
+                    uniques.push(get_value(&log, &field_name)?);
+                } else if key_exists(&log, &field_name) {
+                    let mut path: Vec<String> = Vec::new();
+                    traverse_json(&log, &mut path, &mut uniques);
+                }
             }
         } else {
             get_fields(&fields, &delim, &log)?;
@@ -220,7 +240,7 @@ fn main() -> io::Result<()> {
 }
 
 
-fn get_args() -> io::Result<(String, String, bool, String)> {
+fn get_args() -> io::Result<(String, String, bool, String, bool)> {
     let args: Vec<String> = env::args().collect();
     if args.len() == 1 { print_help(); }
     let mut fields = String::new();
@@ -228,6 +248,7 @@ fn get_args() -> io::Result<(String, String, bool, String)> {
     let mut get_fields = false;
     let mut get_delim = false;
     let mut get_uniques = false;
+    let mut get_values = false;
     let mut get_name = false;
     let mut name = String::new();
     for arg in args {
@@ -236,6 +257,7 @@ fn get_args() -> io::Result<(String, String, bool, String)> {
             "-d" | "--delimiter" => get_delim = true,
             "-n" | "--name" => get_name = true,
             "-u" | "--unique" => get_uniques = true,
+            "-v" | "--values" => get_values = true,
             _ => {
                 if get_fields {
                     fields = arg.to_string();
@@ -250,7 +272,7 @@ fn get_args() -> io::Result<(String, String, bool, String)> {
             }
         }
     }
-    Ok((fields, delim, get_uniques, name))
+    Ok((fields, delim, get_uniques, name, get_values))
 }
 
 fn print_help() {
@@ -264,17 +286,21 @@ JVE - Json Value Extractor
 This program accepts piping line delimited json input via output from some previous command.
 
 Usage: 
-    cat logs.json | jve --delimiter \",\" --fields \"filename,hashes.md5,hashes.ssdeep\"
+    cat logs.json | jve --delimiter ',' --fields 'filename,hashes.md5,hashes.ssdeep'
         - comma seperated output
-    cat logs.json | jve -d \"\\n\" -f \"filename,hashes.md5,hashes.ssdeep\"
+    cat logs.json | jve -d '\\n' -f 'filename,hashes.md5,hashes.ssdeep'
         - output to a new line for each field
-    cat logs.json | jve -d \"\\t\" -f \"filename,hashes.md5,hashes.ssdeep\"
+    cat logs.json | jve -d '\\t' -f 'filename,hashes.md5,hashes.ssdeep'
         - tab seperated output
     cat logs.json | jve --unique
         - Collect and print a uniqued list of all field names found in all logs
         - Nested field names will be dot delimited
-    cat logs.json | jve --unique --name \"field_name\"
-        - Collect and print a uniqued list of all values found in the \"field_name\" field
+    cat logs.json | jve --unique --name 'field_name'
+        - Collect and print a uniqued list of all field names found in logs with 
+          the specified 'field_name'
+    cat logs.json | jve --unique --values --name 'field_name'
+        - print a uniqued list of all values found in the field 'field_name' for
+          across all logs
 
 Options:
     -d, --delimiter ','             Value to use to seperate field value output
@@ -282,9 +308,13 @@ Options:
     -n, --name 'name_of_field'      Name of the field you want all unique values from
                                     - Must be used with the '--unique' argument
     -u, --unique                    Get all unique field names 
-                                    or unique values of a specified field name if 
-                                    the '--name' argument is also specified
+                                    - or unique field names of logs with where the given
+                                      field '--name' exists
+                                    - or, if '--values' is also specified, list all the
+                                      unique value of the specified field '--name'
                                     - Nested field names will be dot delimited
+    -v, --values                    Must be used along with '--unique' and '--name'
+                                    - print the unique value of the specified field
 
 NOTE:   If a field is an array or the field name occurs in an array, 
         this program will concatenate all array field values into a 
