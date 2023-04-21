@@ -24,7 +24,7 @@ Usage:
         - Collect and print a uniqued list of all field names found in logs with 
           the specified 'field_name'
     cat logs.json | jve --unique --values --name 'field_name'
-        - print a uniqued list of all values found in the field 'field_name' for
+        - print a uniqued list of all values found in the field 'field_name' 
           across all logs
           
 Options:
