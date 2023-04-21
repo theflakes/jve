@@ -138,14 +138,7 @@ fn traverse_json(json: &Value, path: &mut Vec<String>, result: &mut Vec<String>)
                 traverse_json(value, path, result);
                 path.pop();
             }
-        }
-        Value::Array(arr) => {
-            for (i, value) in arr.iter().enumerate() {
-                path.push(i.to_string());
-                traverse_json(value, path, result);
-                path.pop();
-            }
-        }
+        },
         _ => {
             let field_path = path.join(".");
             result.push(field_path);
