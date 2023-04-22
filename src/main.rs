@@ -349,7 +349,7 @@ Options:
     -s, --string 'string'           Only examine logs where the specified key's value
                                     contains the specified string
                                     - must be used with '--key'
-                                    - uses a case insensitive match
+                                    - case insensitive match
     -u, --unique                    Get uniqued entries for: 
                                     - if used by itself, all field names across 
                                       all logs
