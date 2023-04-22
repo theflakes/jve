@@ -300,11 +300,12 @@ Options:
     -f, --fields 'a.b.c.d,a.b.e'    Comma seperated list of fields in dot notation
     -n, --name 'name_of_field'      Name of the field you want all unique values from
                                     - Must be used with the '--unique' argument
-    -u, --unique                    Get all unique field names 
-                                    - or unique field names of logs with where the given
+    -u, --unique                    Get uniqued entries for: 
+                                    - if used by itself, all field names across all logs
+                                    - unique field names of logs wherein the given
                                       field '--name' exists
-                                    - or, if '--values' is also specified, list all the
-                                      unique value of the specified field '--name'
+                                    - if '--values' is also specified, list all the
+                                      unique values of the specified field '--name'
                                     - Nested field names will be dot delimited
     -v, --values                    Must be used along with '--unique' and '--name'
                                     - print the unique value of the specified field
