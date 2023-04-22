@@ -13,9 +13,9 @@ This program accepts piping line delimited json input via output from some previ
 Usage: 
     cat logs.json | jve --delimiter ',' --fields 'filename,hashes.md5,hashes.ssdeep'
         - comma seperated output
-    cat logs.json | jve -d '\\n' -f 'filename,hashes.md5,hashes.ssdeep'
+    cat logs.json | jve -d '\n' -f 'filename,hashes.md5,hashes.ssdeep'
         - output to a new line for each field
-    cat logs.json | jve -d '\\t' -f 'filename,hashes.md5,hashes.ssdeep'
+    cat logs.json | jve -d '\t' -f 'filename,hashes.md5,hashes.ssdeep'
         - tab seperated output
     cat logs.json | jve -d ',' -f 'filename,hashes.md5' --key 'path'
         - comma seperated list of all fields only where the key named 'path' exists
