@@ -128,7 +128,7 @@ fn get_fields(fields: &String, delim: &String, log: &Value) -> io::Result<()> {
 
 /*
     path: Track the dot delimited field path as we traverse the JSON structure
-    result: Mutable array to hold additions through recrusive calls of the function
+    result: Mutable array to hold additions through recursive calls of the function
 */
 fn traverse_json(json: &Value, path: &mut Vec<String>, result: &mut Vec<String>) {
     match json {
@@ -188,12 +188,12 @@ fn key_exists(json: &Value, key: &str) -> bool {
 
 fn main() -> io::Result<()> {
     let (
-            fields, 
-            delim, 
-            get_uniques, 
-            field_name,
-            get_values
-        ) = get_args()?;
+        fields, 
+        delim, 
+        get_uniques, 
+        field_name,
+        get_values
+    ) = get_args()?;
 
     let stdin = io::stdin();
 
@@ -267,6 +267,7 @@ fn get_args() -> io::Result<(String, String, bool, String, bool)> {
     }
     Ok((fields, delim, get_uniques, name, get_values))
 }
+
 
 fn print_help() {
     let help = "
