@@ -335,7 +335,7 @@ Usage:
     cat logs.json | jve --unique
         - Collect and print a uniqued list of all key names found in all logs
         - Nested key names will be dot delimited
-    cat logs.json | jve --unique --name 'key_name'
+    cat logs.json | jve --unique --key 'key_name'
         - Collect and print a uniqued list of all key names found in logs with 
           the specified 'key_name'
     cat logs.json | jve --unique --values --key 'key_name'
