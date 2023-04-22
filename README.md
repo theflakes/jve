@@ -11,40 +11,48 @@ JVE - Json Value Extractor
 This program accepts piping line delimited json input via output from some previous command.
 
 Usage: 
-  cat logs.json | jve --delimiter ',' --fields 'filename,hashes.md5,hashes.ssdeep'
-    - comma seperated output
-  cat logs.json | jve -d '\\n' -f 'filename,hashes.md5,hashes.ssdeep'
-    - output to a new line for each field
-  cat logs.json | jve -d '\\t' -f 'filename,hashes.md5,hashes.ssdeep'
-    - tab seperated output
-  cat logs.json | jve --unique
-    - Collect and print a uniqued list of all field names found in all logs
-    - Nested field names will be dot delimited
-  cat logs.json | jve --unique --name 'field_name'
-    - Collect and print a uniqued list of all field names found in logs with 
-      the specified 'field_name'
-  cat logs.json | jve --unique --values --name 'field_name'
-    - print a uniqued list of all values found in the field 'field_name' 
-      across all logs
+    cat logs.json | jve --delimiter ',' --fields 'filename,hashes.md5,hashes.ssdeep'
+        - comma seperated output
+    cat logs.json | jve -d '\\n' -f 'filename,hashes.md5,hashes.ssdeep'
+        - output to a new line for each field
+    cat logs.json | jve -d '\\t' -f 'filename,hashes.md5,hashes.ssdeep'
+        - tab seperated output
+    cat logs.json | jve -d ',' -f 'filename,hashes.md5' --key 'path'
+        - comma seperated list of all fields only where the key named 'path' exists
+    cat logs.json | jve -d ',' -f 'filename,hashes.md5' -k 'path' --string '/home/evil'
+        - comma seperated list of all fields only where the key named 'path' exists
+          and the 'path' key's value contains the string '/home/evil'
+    cat logs.json | jve --unique
+        - Collect and print a uniqued list of all key names found in all logs
+        - Nested key names will be dot delimited
+    cat logs.json | jve --unique --name 'key_name'
+        - Collect and print a uniqued list of all key names found in logs with 
+          the specified 'key_name'
+    cat logs.json | jve --unique --values --key 'key_name'
+        - print a uniqued list of all values found in the key 'key_name' 
+          across all logs
 
 Options:
-  -d, --delimiter ','             Value to use to seperate field value output
-  -f, --fields 'a.b.c.d,a.b.e'    Comma seperated list of fields in dot notation
-  -n, --name 'name_of_field'      Name of the field you want all unique values from
-                                  - Must be used with the '--unique' argument
-  -u, --unique                    Get uniqued entries for: 
-                                  - if used by itself, all field names across all logs
-                                  - unique field names of logs wherein the given
-                                    field '--name' exists
-                                  - if '--values' is also specified, list all the
-                                    unique values of the specified field '--name'
-                                  - Nested field names will be dot delimited
-  -v, --values                    Must be used along with '--unique' and '--name'
-                                  - print the unique value of the specified field
+    -d, --delimiter ','             Value to use to seperate field value output
+    -f, --fields 'a.b.c.d,a.b.e'    Comma seperated list of fields in dot notation
+    -k, --key 'name_of_key'         Only examine logs where the specified key exists
+    -s, --string 'string'           Only examine logs where the specified key's value
+                                    contains the specified string
+                                    - must be used with '--key'
+    -u, --unique                    Get uniqued entries for: 
+                                    - if used by itself, all field names across 
+                                      all logs
+                                    - unique key names of logs wherein the given 
+                                      key exists
+                                    - if '--values' is also specified, list all the
+                                      unique values of the specified key '--key'
+                                    - Nested key names will be dot delimited
+    -v, --values                    Must be used along with '--unique' and '--key'
+                                    - print the unique values of the specified key
 
-NOTE: If a field is an array or the field name occurs in an array, 
-      this program will concatenate all array field values into a 
-      delimited quoted string across all array elements.
+NOTE:   If a key is an array or the key name occurs in an array, 
+        this program will concatenate all array key values into a 
+        delimited quoted string across all array elements.
 ```
 ### To Compile on Linux for static linking
 ```

@@ -172,18 +172,50 @@ fn print_uniques(mut uniques: Vec<String>) {
     print_vec(&uniques);
 }
 
-fn key_exists(json: &Value, key: &str) -> bool {
+fn get_key_value(json: &Value, key: &str) -> (bool, String) {
     let keys: Vec<&str> = key.split('.').collect();
     let mut current_json = json;
-
     for k in keys {
         match current_json.get(k) {
             Some(val) => current_json = val,
-            None => return false,
+            None => return (false, String::new())
         }
     }
+    let value = current_json.to_string();
+    (true, value)
+}
 
-    true
+fn print_header(get_uniques: bool, fields: &str, delim: &str) {
+    if !get_uniques{
+        if !delim.eq("\\n") { println!("{}", fields.replace(",", &delim)) }
+    }
+}
+
+fn process_uniques(
+                    field_name: &str, 
+                    get_values: bool, 
+                    log: &Value,
+                    value: &str
+                ) -> io::Result<Vec<String>> {
+    let mut uniques: Vec<String> = Vec::new();
+    // Get all field names across all logs
+    if field_name.is_empty() {
+        let mut path: Vec<String> = Vec::new();
+        traverse_json(&log, &mut path, &mut uniques);
+    } else {
+        let (key_exists, key_value) = get_key_value(&log, &field_name);
+        // return if the string specified is not found in the key's value
+        if !value.is_empty() && !key_value.contains(&value) { return Ok(uniques) }
+        // get all uniqued values of a given field
+        if get_values {
+            uniques.push(get_value(&log, &field_name)?);
+        // get all uniqued field names where a given field exists in the log
+        } else if key_exists {
+            let mut path: Vec<String> = Vec::new();
+            traverse_json(&log, &mut path, &mut uniques);
+        }
+    }
+    Ok(uniques)
 }
 
 fn main() -> io::Result<()> {
@@ -192,15 +224,13 @@ fn main() -> io::Result<()> {
         delim, 
         get_uniques, 
         field_name,
-        get_values
+        get_values,
+        value
     ) = get_args()?;
 
     let stdin = io::stdin();
 
-    // print header for delimited results
-    if !get_uniques{
-        if !delim.eq("\\n") { println!("{}", fields.replace(",", &delim)) }
-    }
+    print_header(get_uniques, &fields, &delim);
     
     let mut uniques: Vec<String> = Vec::new();
 
@@ -209,31 +239,36 @@ fn main() -> io::Result<()> {
             Ok(o) => o,
             Err(_) => continue,
         };
+
         let log = string_to_json(l)?;
+
+        // We are only looking for unique field names or values in a given field
         if get_uniques {
-            if field_name.is_empty() {
-                let mut path: Vec<String> = Vec::new();
-                traverse_json(&log, &mut path, &mut uniques);
-            } else {
-                if get_values {
-                    uniques.push(get_value(&log, &field_name)?);
-                } else if key_exists(&log, &field_name) {
-                    let mut path: Vec<String> = Vec::new();
-                    traverse_json(&log, &mut path, &mut uniques);
-                }
-            }
-        } else {
-            get_fields(&fields, &delim, &log)?;
+            uniques.extend(process_uniques(&field_name, get_values, &log, &value)?);
+            continue;
         }
+
+        // only print out logs where the given field exists  
+        // and/or its value contains specified value in the key's value
+        if !field_name.is_empty() {
+            let (key_exists, key_value) = get_key_value(&log, &field_name);
+            if !key_exists { continue; }
+            if !value.is_empty() && !key_value.contains(&value) { continue; }
+            get_fields(&fields, &delim, &log)?;
+            continue;
+        }
+
+        // we just want all fields specified 
+        // including null results from log not having those fields
+        get_fields(&fields, &delim, &log)?;
     }
-    if get_uniques {
-        print_uniques(uniques)
-    }
+
+    // if we were only looking for uniques, print what was found
+    if get_uniques { print_uniques(uniques) }
     Ok(())
 }
 
-
-fn get_args() -> io::Result<(String, String, bool, String, bool)> {
+fn get_args() -> io::Result<(String, String, bool, String, bool, String)> {
     let args: Vec<String> = env::args().collect();
     if args.len() == 1 { print_help(); }
     let mut fields = String::new();
@@ -242,13 +277,16 @@ fn get_args() -> io::Result<(String, String, bool, String, bool)> {
     let mut get_delim = false;
     let mut get_uniques = false;
     let mut get_values = false;
-    let mut get_name = false;
-    let mut name = String::new();
+    let mut get_key = false;
+    let mut key = String::new();
+    let mut get_value = false;
+    let mut value = String::new();
     for arg in args {
         match arg.as_str() {
             "-f" | "--fields" => get_fields = true,
             "-d" | "--delimiter" => get_delim = true,
-            "-n" | "--name" => get_name = true,
+            "-k" | "--key" => get_key = true,
+            "-s" | "--string" => get_value = true,
             "-u" | "--unique" => get_uniques = true,
             "-v" | "--values" => get_values = true,
             _ => {
@@ -258,14 +296,17 @@ fn get_args() -> io::Result<(String, String, bool, String, bool)> {
                 } else if get_delim {
                     delim = arg.to_string();
                     get_delim = false;
-                } else if get_name {
-                    name = arg.to_string();
-                    get_name = false;
+                } else if get_key {
+                    key = arg.to_string();
+                    get_key = false;
+                } else if get_value {
+                    value = arg.to_string();
+                    get_value = false;
                 }
             }
         }
     }
-    Ok((fields, delim, get_uniques, name, get_values))
+    Ok((fields, delim, get_uniques, key, get_values, value))
 }
 
 
@@ -286,33 +327,41 @@ Usage:
         - output to a new line for each field
     cat logs.json | jve -d '\\t' -f 'filename,hashes.md5,hashes.ssdeep'
         - tab seperated output
+    cat logs.json | jve -d ',' -f 'filename,hashes.md5' --key 'path'
+        - comma seperated list of all fields only where the key named 'path' exists
+    cat logs.json | jve -d ',' -f 'filename,hashes.md5' -k 'path' --string '/home/evil'
+        - comma seperated list of all fields only where the key named 'path' exists
+          and the 'path' key's value contains the string '/home/evil'
     cat logs.json | jve --unique
-        - Collect and print a uniqued list of all field names found in all logs
-        - Nested field names will be dot delimited
-    cat logs.json | jve --unique --name 'field_name'
-        - Collect and print a uniqued list of all field names found in logs with 
-          the specified 'field_name'
-    cat logs.json | jve --unique --values --name 'field_name'
-        - print a uniqued list of all values found in the field 'field_name' 
+        - Collect and print a uniqued list of all key names found in all logs
+        - Nested key names will be dot delimited
+    cat logs.json | jve --unique --name 'key_name'
+        - Collect and print a uniqued list of all key names found in logs with 
+          the specified 'key_name'
+    cat logs.json | jve --unique --values --key 'key_name'
+        - print a uniqued list of all values found in the key 'key_name' 
           across all logs
 
 Options:
     -d, --delimiter ','             Value to use to seperate field value output
     -f, --fields 'a.b.c.d,a.b.e'    Comma seperated list of fields in dot notation
-    -n, --name 'name_of_field'      Name of the field you want all unique values from
-                                    - Must be used with the '--unique' argument
+    -k, --key 'name_of_key'         Only examine logs where the specified key exists
+    -s, --string 'string'           Only examine logs where the specified key's value
+                                    contains the specified string
+                                    - must be used with '--key'
     -u, --unique                    Get uniqued entries for: 
-                                    - if used by itself, all field names across all logs
-                                    - unique field names of logs wherein the given
-                                      field '--name' exists
+                                    - if used by itself, all field names across 
+                                      all logs
+                                    - unique key names of logs wherein the given 
+                                      key exists
                                     - if '--values' is also specified, list all the
-                                      unique values of the specified field '--name'
-                                    - Nested field names will be dot delimited
-    -v, --values                    Must be used along with '--unique' and '--name'
-                                    - print the unique value of the specified field
+                                      unique values of the specified key '--key'
+                                    - Nested key names will be dot delimited
+    -v, --values                    Must be used along with '--unique' and '--key'
+                                    - print the unique values of the specified key
 
-NOTE:   If a field is an array or the field name occurs in an array, 
-        this program will concatenate all array field values into a 
+NOTE:   If a key is an array or the key name occurs in an array, 
+        this program will concatenate all array key values into a 
         delimited quoted string across all array elements.
 ";
     println!("{}", help);
