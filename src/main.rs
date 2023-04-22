@@ -181,7 +181,7 @@ fn get_key_value(json: &Value, key: &str) -> (bool, String) {
             None => return (false, String::new())
         }
     }
-    let value = current_json.to_string();
+    let value = current_json.to_string().to_lowercase();
     (true, value)
 }
 
@@ -306,7 +306,7 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String)> {
             }
         }
     }
-    Ok((fields, delim, get_uniques, key, get_values, value))
+    Ok((fields, delim, get_uniques, key, get_values, value.to_lowercase()))
 }
 
 
@@ -349,6 +349,7 @@ Options:
     -s, --string 'string'           Only examine logs where the specified key's value
                                     contains the specified string
                                     - must be used with '--key'
+                                    - uses a case insensitive match
     -u, --unique                    Get uniqued entries for: 
                                     - if used by itself, all field names across 
                                       all logs
