@@ -33,8 +33,8 @@ Usage:
           across all logs
 
 Options:
-    -d, --delimiter ','             Value to use to seperate field value output
-    -f, --fields 'a.b.c.d,a.b.e'    Comma seperated list of fields in dot notation
+    -d, --delimiter ','             Value to use to seperate key value output
+    -f, --fields 'a.b.c.d,a.b.e'    Comma seperated list of keys in dot notation
     -k, --key 'name_of_key'         Only examine logs where the specified key exists
     -s, --string 'string'           Only examine logs where the specified key's value
                                     contains the specified string
