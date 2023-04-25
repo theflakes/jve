@@ -130,13 +130,18 @@ fn get_fields(fields: &String, delim: &String, log: &Value) -> io::Result<()> {
     path: Track the dot delimited field path as we traverse the JSON structure
     result: Mutable array to hold additions through recursive calls of the function
 */
-fn traverse_json(json: &Value, path: &mut Vec<String>, result: &mut Vec<String>) {
+fn traverse_json_key(json: &Value, path: &mut Vec<String>, result: &mut Vec<String>) {
     match json {
         Value::Object(map) => {
             for (key, value) in map.iter() {
                 path.push(key.to_string());
-                traverse_json(value, path, result);
+                traverse_json_key(value, path, result);
                 path.pop();
+            }
+        },
+        Value::Array(arr) => {
+            if !arr.is_empty() {
+                traverse_json_key(&arr[0], path, result);
             }
         },
         _ => {
@@ -144,19 +149,6 @@ fn traverse_json(json: &Value, path: &mut Vec<String>, result: &mut Vec<String>)
             result.push(field_path);
         }
     }
-}
-
-fn get_value(log: &Value, field_path: &str) -> io::Result<String> {
-    let fields = field_path.split('.').collect::<Vec<&str>>();
-    let mut value = log;
-
-    for field in fields {
-        value = match value.get(field) {
-            Some(v) => &v,
-            _ => &Value::Null,
-        };
-    }
-    Ok(value.to_string())
 }
 
 fn print_vec(values: &Vec<String>) {
@@ -191,6 +183,31 @@ fn print_header(get_uniques: bool, fields: &str, delim: &str) {
     }
 }
 
+fn get_json_values(json: &Value, path: &str) -> Vec<String> {
+    let mut result = Vec::new();
+    let keys: Vec<&str> = path.split('.').collect();
+    get_values_recursive(json, &keys, &mut result);
+    result
+}
+
+fn get_values_recursive(json: &Value, keys: &[&str], result: &mut Vec<String>) {
+    if let Some(key) = keys.first() {
+        if let Some(value) = json.get(*key) {
+            if value.is_array() {
+                for item in value.as_array().unwrap() {
+                    get_values_recursive(item, &keys[1..], result);
+                }
+            } else if value.is_object() {
+                get_values_recursive(value, &keys[1..], result);
+            } else if keys.len() == 1 {
+                if let Some(value_str) = value.as_str() {
+                    result.push(value_str.to_string());
+                }
+            }
+        }
+    }
+}
+
 fn process_uniques(
                     field_name: &str, 
                     get_values: bool, 
@@ -201,18 +218,18 @@ fn process_uniques(
     // Get all field names across all logs
     if field_name.is_empty() {
         let mut path: Vec<String> = Vec::new();
-        traverse_json(&log, &mut path, &mut uniques);
+        traverse_json_key(&log, &mut path, &mut uniques);
     } else {
         let (key_exists, key_value) = get_key_value(&log, &field_name);
         // return if the string specified is not found in the key's value
         if !value.is_empty() && !key_value.contains(&value) { return Ok(uniques) }
         // get all uniqued values of a given field
         if get_values {
-            uniques.push(get_value(&log, &field_name)?);
+            uniques.extend(get_json_values(&log, field_name));
         // get all uniqued field names where a given field exists in the log
         } else if key_exists {
             let mut path: Vec<String> = Vec::new();
-            traverse_json(&log, &mut path, &mut uniques);
+            traverse_json_key(&log, &mut path, &mut uniques);
         }
     }
     Ok(uniques)
@@ -248,8 +265,8 @@ fn main() -> io::Result<()> {
             continue;
         }
 
-        // only print out logs where the given field exists  
-        // and/or its value contains specified value in the key's value
+        // only print out logs where the given key exists  
+        // and/or its value contains specified value
         if !field_name.is_empty() {
             let (key_exists, key_value) = get_key_value(&log, &field_name);
             if !key_exists { continue; }
