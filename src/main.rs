@@ -4,7 +4,7 @@ use std::io;
 use std::{env, process};
 use serde_json::{Value};
 
-fn print_results(output: &Vec<String>, split_fields: Vec<&str>, delim: &String) {
+fn print_results(output: &Vec<String>, split_fields: Vec<&str>, delim: &str) {
     if delim.eq("\\n") {
         split_fields.iter().zip(output.iter())
             .map(|(a, b)| format!("{}: {}", a, b))
@@ -42,10 +42,9 @@ fn get_field_value(json: &Value, name: &str)  -> io::Result<Value> {
 }
 
 fn get_array(input: &Value, name: &String) -> io::Result<Vec<Value>> {
-    let mut js = Vec::new();
-    js = match input[name].as_array() {
+    let js = match input[name].as_array() {
         Some(j) => j.to_owned(),
-        None => js,
+        None => Vec::new(),
     };
     Ok(js)
 }
@@ -59,31 +58,28 @@ fn get_field(input: Value, name: &String) -> io::Result<(Value, bool, Value)> {
     Ok((value, is_array, input))
 }
 
-fn get_fields_array(array: &Vec<Value>, names: Vec<&str>) -> io::Result<Vec<Value>> {
-    let mut output: Vec<Value> = Vec::new();
+fn get_fields_array(array: &Vec<Value>, names: Vec<&str>, results: &mut Vec<Value>) -> io::Result<()> {
+    let mut is_array = false;
     for entry in array {
-        let mut is_array = false;
         let fields = names.clone();
         let mut track_names = names.clone();
-        let mut results: Vec<Value> = Vec::new();
         let mut value = Value::Null;
         for n in fields {
             track_names.remove(0);
-            if is_array && track_names.len() != 0 { // if there are no field names left assume we want to extract the last field
-                let js = get_array(&value.clone(), &n.to_string())?;
-                results = get_fields_array(&js, track_names.clone())?;
-            }
             (value, is_array, _) = get_field(entry.clone(), &n.to_string())?;
-        }
-        if !results.is_empty() {
-            for r in results {
-                output.push(r);
+            if is_array && track_names.len() != 0 { // if there are no field names left assume we want to extract the last field
+                println!("{:?}", value);
+                println!("{:?}", n);
+                let js = match value.as_array() {
+                    Some(j) => j.to_owned(),
+                    None => continue,
+                };
+                get_fields_array(&js, track_names.clone(), results)?;
             }
-            continue;
         }
-        output.push(value);
+        if !value.is_null() { results.push(value); }
     }
-    Ok(output)
+    Ok(())
 }
 
 fn join_values(array: &Vec<Value>, delim: &String) -> io::Result<String> {
@@ -91,9 +87,10 @@ fn join_values(array: &Vec<Value>, delim: &String) -> io::Result<String> {
     Ok(format!("\"{}\"", temp.join(delim)))
 }
 
-fn get_fields(fields: &String, delim: &String, log: &Value) -> io::Result<()> {
+fn get_fields(log: &Value, fields: &String, delim: &String) -> io::Result<()> {
     let split_fields: Vec<&str> = fields.split(",").collect();
     let mut output = Vec::new(); // vec to build final output
+    let mut results = Vec::new();
     for field in split_fields.iter() {
         let names: Vec<&str> = field.split(".").collect();
         let mut track_names = names.clone(); // needed for when we hit a field that is an array
@@ -106,8 +103,8 @@ fn get_fields(fields: &String, delim: &String, log: &Value) -> io::Result<()> {
         for n in names {
             if is_array { // detecting arrays is working, but logic is horrible I think, prob can be done better
                 let js = get_array(&previous_value.clone(), &previous_name)?;
-                let array_results = get_fields_array(&js, track_names.clone())?;
-                array_values_concat = join_values(&array_results, delim)?;
+                get_fields_array(&js, track_names.clone(), &mut results)?;
+                array_values_concat = join_values(&results, delim)?;
                 break; // if we hit an array we treat the rest of the parsing differently
             }
             track_names.remove(0); // keep track of field names already used by removing them from this vec
@@ -271,13 +268,13 @@ fn main() -> io::Result<()> {
             let (key_exists, key_value) = get_key_value(&log, &field_name);
             if !key_exists { continue; }
             if !value.is_empty() && !key_value.contains(&value) { continue; }
-            get_fields(&fields, &delim, &log)?;
+            get_fields(&log, &fields, &delim)?;
             continue;
         }
 
         // we just want all fields specified 
         // including null results from log not having those fields
-        get_fields(&fields, &delim, &log)?;
+        get_fields(&log, &fields, &delim)?;
     }
 
     // if we were only looking for uniques, print what was found
