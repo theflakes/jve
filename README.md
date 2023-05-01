@@ -70,7 +70,7 @@ filename,hashes.md5,entropy,binary.sections.sections.name,binary.sections.sectio
 ```
 #### Example output parsing unique values from a common field across all JSON logs
 ```
-cat .\files.json | .\jve -u --name "hashes.md5"
+cat .\files.json | .\jve --unique --values --key "hashes.md5"
 
 "06e8f7e6ddd666dbd323f7d9210f91ae"
 "089d48a11bff0df720f1079f5dc58a83"
@@ -105,7 +105,7 @@ cat .\files.json | .\jve -u --name "hashes.md5"
 ```
 #### Example output parsing a JSON nested structure a common field across all JSON logs
 ```
-cat .\files.json | .\jve -u --name "hashes"
+cat .\files.json | .\jve --unique --values --key "hashes"
 
 {"md5":"06e8f7e6ddd666dbd323f7d9210f91ae","sha1":"883ae527ee83ed9346cd82c33dfc0eb97298dc14","sha256":"8301e344371b0753d547b429c5fe513908b1c9813144f08549563ac7f4d7da68","ssdeep":"12:QZsiL5wmHOlDmo0qml3lDmo0qmZclLwr2FlDmo0IWUol94klrgl2FlDmo0qjKAZY:QCGwv4o0x34o02lLwiF4o0ZvbUsF4o0Z"}
 {"md5":"089d48a11bff0df720f1079f5dc58a83","sha1":"88f1c647378b5b22ebadb465dc80fcfd9e7b97c9","sha256":"a9e8ad0792b546a4a8ce49eda82b327ad9581141312efec3ac6f2d3ad5a05f17","ssdeep":"12:QZsiL5wmHOlDmo0qmEclLwr2FlDmo0IWhvXiTpKUAa0C6wyEZwyEG:QCGwv4o0RlLwiF4o0hX+wDXZWX"}
@@ -125,7 +125,7 @@ cat .\files.json | .\jve -u --name "hashes"
 ```
 #### Example output using new line as a delimiter recursing through sub directories
 ```
-fmd.exe c:\ -d 2 | jve -d "\n" -f "filename,hashes.md5,entropy,binary.sections.sections.name,binary.sections.sections.entropy,ads.name,ads.bytes,ads.first_256_bytes,binary.imports.imports.lib,binary.imports.imports.names"
+fmd.exe c:\ -d 2 | jve -d "\n" --fields "filename,hashes.md5,entropy,binary.sections.sections.name,binary.sections.sections.entropy,ads.name,ads.bytes,ads.first_256_bytes,binary.imports.imports.lib,binary.imports.imports.names"
 
 [*] filename: "$WINRE_BACKUP_PARTITION.MARKER"
 [*] hashes.md5: "d41d8cd98f00b204e9800998ecf8427e"
