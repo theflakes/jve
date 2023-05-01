@@ -175,6 +175,9 @@ fmd.exe c:\ -d 2 | jve -d "\n" --fields "filename,hashes.md5,entropy,binary.sect
 ```
 cat .\res.txt | .\jve --unique
 ads
+ads.bytes
+ads.first_256_bytes
+ads.name
 binary.entry_point
 binary.exports.count
 binary.exports.hashes.md5

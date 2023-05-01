@@ -3,6 +3,7 @@ extern crate serde_json;
 use std::io;
 use std::{env, process};
 use serde_json::{Value};
+use std::collections::HashSet;
 
 fn print_results(output: &Vec<String>, split_fields: Vec<&str>, delim: &str) {
     if delim.eq("\\n") {
@@ -123,31 +124,6 @@ fn get_fields(log: &Value, fields: &String, delim: &String) -> io::Result<()> {
     Ok(())
 }
 
-/*
-    path: Track the dot delimited field path as we traverse the JSON structure
-    result: Mutable array to hold additions through recursive calls of the function
-*/
-fn traverse_json_key(json: &Value, path: &mut Vec<String>, result: &mut Vec<String>) {
-    match json {
-        Value::Object(map) => {
-            for (key, value) in map.iter() {
-                path.push(key.to_string());
-                traverse_json_key(value, path, result);
-                path.pop();
-            }
-        },
-        Value::Array(arr) => {
-            if !arr.is_empty() {
-                traverse_json_key(&arr[0], path, result);
-            }
-        },
-        _ => {
-            let field_path = path.join(".");
-            result.push(field_path);
-        }
-    }
-}
-
 fn print_vec(values: &Vec<String>) {
     for v in values {
         println!("{}", v);
@@ -205,6 +181,37 @@ fn get_values_recursive(json: &Value, keys: &[&str], result: &mut Vec<String>) {
     }
 }
 
+fn traverse_json(json: &Value, prefix: String, paths: &mut HashSet<String>) {
+    match json {
+        Value::Object(map) => {
+            for (key, value) in map {
+                let new_prefix = if prefix.is_empty() {
+                    key.to_string()
+                } else {
+                    format!("{}.{}", prefix, key)
+                };
+                traverse_json(value, new_prefix, paths);
+            }
+        }
+        Value::Array(vec) => {
+            if let Some(first_element) = vec.first() {
+                traverse_json(first_element, prefix.clone(), paths);
+            }
+        }
+        _ => {
+            paths.insert(prefix);
+        }
+    }
+}
+
+fn get_field_paths(json: &Value) -> Vec<String> {
+    let mut paths = HashSet::new();
+    traverse_json(json, "".to_string(), &mut paths);
+    let mut paths_vec: Vec<String> = paths.into_iter().collect();
+    paths_vec.sort();
+    paths_vec
+}
+
 fn process_uniques(
                     field_name: &str, 
                     get_values: bool, 
@@ -215,7 +222,7 @@ fn process_uniques(
     // Get all field names across all logs
     if field_name.is_empty() {
         let mut path: Vec<String> = Vec::new();
-        traverse_json_key(&log, &mut path, &mut uniques);
+        uniques.extend(get_field_paths(&log));
     } else {
         let (key_exists, key_value) = get_key_value(&log, &field_name);
         // return if the string specified is not found in the key's value
@@ -226,7 +233,7 @@ fn process_uniques(
         // get all uniqued field names where a given field exists in the log
         } else if key_exists {
             let mut path: Vec<String> = Vec::new();
-            traverse_json_key(&log, &mut path, &mut uniques);
+            uniques.extend(get_field_paths(&log));
         }
     }
     Ok(uniques)
