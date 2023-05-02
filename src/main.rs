@@ -149,13 +149,13 @@ fn traverse_json(json: &Value, prefix: &str, paths: &mut HashSet<String>) {
                 let new_prefix = get_new_prefix(&prefix, key);
                 traverse_json(value, &new_prefix, paths);
             }
+            paths.insert(prefix.to_string());
         }
         Value::Array(vec) => {
             if let Some(first_element) = vec.first() {
                 traverse_json(first_element, prefix.clone(), paths);
-            } else {
-                paths.insert(prefix.to_string());
             }
+            paths.insert(prefix.to_string());
         }
         _ => {
             paths.insert(prefix.to_string());
