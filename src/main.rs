@@ -78,11 +78,11 @@ fn print_vec(values: &Vec<String>) {
     }
 }
 
-fn print_uniques(mut uniques: Vec<String>) {
-    uniques.sort();
-    uniques.dedup();
-    uniques.retain(|v| v != "");
-    print_vec(&uniques);
+fn print_uniques(mut uniques: HashSet<String>) {
+    let mut values: Vec<String> = uniques.into_iter().collect();
+    values.sort();
+    values.retain(|v| v != "");
+    print_vec(&values);
 }
 
 fn get_key_value(json: &Value, key: &str) -> (bool, String) {
@@ -95,7 +95,7 @@ fn get_key_value(json: &Value, key: &str) -> (bool, String) {
         }
     }
     let value = current_json.to_string().to_lowercase();
-    (true, value)
+    return (true, value)
 }
 
 fn print_header(get_uniques: bool, fields: &str, delim: &str) {
@@ -108,14 +108,7 @@ fn print_header(get_uniques: bool, fields: &str, delim: &str) {
     }
 }
 
-fn get_json_values(json: &Value, path: &str) -> Vec<String> {
-    let mut result = Vec::new();
-    let keys: Vec<&str> = path.split('.').collect();
-    get_values_recursive(json, &keys, &mut result);
-    result
-}
-
-fn get_values_recursive(json: &Value, keys: &[&str], result: &mut Vec<String>) {
+fn get_values_recursive(json: &Value, keys: &[&str], result: &mut HashSet<String>) {
     if let Some(key) = keys.first() {
         if let Some(value) = json.get(*key) {
             if value.is_array() {
@@ -126,7 +119,7 @@ fn get_values_recursive(json: &Value, keys: &[&str], result: &mut Vec<String>) {
                 get_values_recursive(value, &keys[1..], result);
             } else if keys.len() == 1 {
                 if let Some(value_str) = value.as_str() {
-                    result.push(value_str.to_string());
+                    result.insert(value_str.to_string());
                 }
             }
         }
@@ -163,39 +156,29 @@ fn traverse_json(json: &Value, prefix: &str, paths: &mut HashSet<String>) {
     }
 }
 
-fn get_field_paths(json: &Value) -> Vec<String> {
-    let mut paths = HashSet::new();
-    traverse_json(json, &"".to_string(), &mut paths);
-    let mut paths_vec: Vec<String> = paths.into_iter().collect();
-    paths_vec.sort();
-    paths_vec
-}
-
 fn process_uniques(
                     field_name: &str, 
                     get_values: bool, 
                     log: &Value,
-                    value: &str
-                ) -> io::Result<Vec<String>> {
-    let mut uniques: Vec<String> = Vec::new();
+                    value: &str,
+                    uniques: &mut HashSet<String>
+                ) {
     // Get all field names across all logs
     if field_name.is_empty() {
-        let mut path: Vec<String> = Vec::new();
-        uniques.extend(get_field_paths(&log));
+        traverse_json(log, &"".to_string(), uniques);
     } else {
         let (key_exists, key_value) = get_key_value(&log, &field_name);
         // return if the string specified is not found in the key's value
-        if !value.is_empty() && !key_value.contains(&value) { return Ok(uniques) }
+        if !value.is_empty() && !key_value.contains(&value) { return }
         // get all uniqued values of a given field
         if get_values {
-            uniques.extend(get_json_values(&log, field_name));
+            let keys: Vec<&str> = field_name.split('.').collect();
+            get_values_recursive(&log, &keys, uniques);
         // get all uniqued field names where a given field exists in the log
         } else if key_exists {
-            let mut path: Vec<String> = Vec::new();
-            uniques.extend(get_field_paths(&log));
+            traverse_json(log, &"".to_string(), uniques);
         }
     }
-    Ok(uniques)
 }
 
 fn main() -> io::Result<()> {
@@ -212,7 +195,7 @@ fn main() -> io::Result<()> {
 
     print_header(get_uniques, &fields, &delim);
     
-    let mut uniques: Vec<String> = Vec::new();
+    let mut uniques = HashSet::new();
 
     for line in stdin.lines() {
         let l = match line {
@@ -224,7 +207,7 @@ fn main() -> io::Result<()> {
 
         // We are only looking for unique field names or values in a given field
         if get_uniques {
-            uniques.extend(process_uniques(&field_name, get_values, &log, &value)?);
+            process_uniques(&field_name, get_values, &log, &value, &mut uniques);
             continue;
         }
 
