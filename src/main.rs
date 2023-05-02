@@ -7,16 +7,22 @@ use std::collections::HashSet;
 
 
 fn print_results(output: &Vec<String>, split_fields: Vec<&str>, delim: &str) {
+    let mut results = String::new();
     match delim {
         "\\n" => {
                     split_fields.iter().zip(output.iter())
                         .map(|(a, b)| format!("{}: {}", a, b))
                         .for_each(|o| println!("[*] {}", o));
-                    println!()
+                    println!();
+                    return
                 },
-        "\\t" => println!("{}", output.join("\t")),
-        _     => println!("{}", output.join(delim))
+        "\\t" => results = output.join("\t"),
+        _     => results = output.join(delim)
     }
+    // eh, ugly but tired now
+    if !results.is_empty() && !results.eq("") 
+        && !results.eq("\"\"") && !results.eq("[\"\"]")
+            { println!("{}", results); }
 }
 
 fn string_to_json(input: String) -> io::Result<Value> {
@@ -35,7 +41,8 @@ fn string_to_json(input: String) -> io::Result<Value> {
 // If targeted key is an array, concat it using comma delim
 fn join_values(array: &Vec<Value>) -> String {
     if array.len() == 1 { return array[0].to_string() }
-    let temp: Vec<String> = array.into_iter().map(|n| n.to_string()).collect();
+    let mut temp: Vec<String> = array.into_iter().map(|n| n.to_string()).collect();
+    temp.retain(|t| t != "");
     return format!("\"{}\"", temp.join(","))
 }
 
@@ -80,7 +87,6 @@ fn traverse_json_value(json: &Value, field_names: &[&str], values: &mut Vec<Valu
 fn print_uniques(mut uniques: &HashSet<String>) {
     let mut values: Vec<String> = uniques.into_iter().cloned().collect();
     values.sort();
-    values.retain(|v| v != "");
     println!("{:#?}", values);
 }
 
@@ -181,7 +187,7 @@ fn found_in_vec(values: &HashSet<String>, value: &str) -> bool {
 fn check_key_value(log: &Value, keys: &Vec<&str>, value: &str) -> bool {
     let mut values: HashSet<String> = HashSet::new();
     get_values_recursive(log, &keys, &mut values);
-    if value.is_empty() && values.len() > 0 { return true; }
+    if value.is_empty() && !values.is_empty() { return true; }
     return found_in_vec(&values, &value)
 }
 
@@ -200,16 +206,14 @@ fn main() -> io::Result<()> {
     if !get_uniques { print_header(&fields, &delim) };
     
     let mut uniques = HashSet::new();
-    let mut keys: Vec<&str> = field_name.split('.').collect();
+    let no_whitespace = field_name.replace(char::is_whitespace, "");
+    let mut keys: Vec<&str> = no_whitespace.split('.').collect();
     keys.retain(|&k| k != "");
 
     for line in stdin.lines() {
         let l = match line {
             Ok(o) => o,
-            Err(e) => {
-                println!("{:?}", e);
-                continue;
-            },
+            Err(_) => {continue},
         };
 
         let log = string_to_json(l)?;
@@ -275,6 +279,14 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String)> {
                 }
             }
         }
+    }
+    if fields.is_empty() ^ delim.is_empty() {
+        println!("If either '--delimiter' or '--fields' is used, both must be used.");
+        print_help();
+    }
+    if !string.is_empty() && key.is_empty() {
+        println!("If '--string' is used then '--key' must be used.");
+        print_help();
     }
     Ok((fields, delim, get_uniques, key, get_values, string.to_lowercase()))
 }
