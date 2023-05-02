@@ -132,7 +132,6 @@ fn traverse_json(json: &Value, prefix: &str, paths: &mut HashSet<String>) {
                 let new_prefix = get_new_prefix(&prefix, key);
                 traverse_json(value, &new_prefix, paths);
             }
-            paths.insert(prefix.to_string());
         }
         Value::Array(vec) => {
             if let Some(first_element) = vec.first() {
@@ -150,22 +149,23 @@ fn process_uniques(
                     keys: &Vec<&str>, 
                     get_values: bool, 
                     log: &Value,
-                    value: &str,
-                    uniques: &mut HashSet<String>
-                ) {
+                    value: &str
+                ) -> HashSet<String> {
+    let mut uniques: HashSet<String> = HashSet::new();
     // Get all field names across all logs
     if keys.is_empty() {
-        traverse_json(log, &"".to_string(), uniques);
+        traverse_json(log, &"".to_string(), &mut uniques);
     } else {
-        if !check_key_value(log, keys, value) { return; }
+        if !check_key_value(&log, &keys, &value) { return uniques; }
         // get all uniqued values of a given field
         if get_values {
-            get_values_recursive(&log, &keys, uniques);
+            get_values_recursive(&log, &keys, &mut uniques);
         // get all uniqued field names where a given field exists in the log
         } else {
-            traverse_json(log, &"".to_string(), uniques);
+            traverse_json(log, &"".to_string(), &mut uniques);
         }
     }
+    return uniques
 }
 
 fn found_in_vec(values: &HashSet<String>, value: &str) -> bool {
@@ -179,10 +179,10 @@ fn found_in_vec(values: &HashSet<String>, value: &str) -> bool {
 
 // Verify Key Value pair exist
 fn check_key_value(log: &Value, keys: &Vec<&str>, value: &str) -> bool {
-    let mut values: Vec<Value> = Vec::new();
-    traverse_json_value(log, &keys, &mut values);
-    let vs: HashSet<String> = values.iter().map(|v| v.to_string()).collect();
-    return found_in_vec(&vs, &value)
+    let mut values: HashSet<String> = HashSet::new();
+    get_values_recursive(log, &keys, &mut values);
+    if value.is_empty() && values.len() > 0 { return true; }
+    return found_in_vec(&values, &value)
 }
 
 fn main() -> io::Result<()> {
@@ -206,21 +206,24 @@ fn main() -> io::Result<()> {
     for line in stdin.lines() {
         let l = match line {
             Ok(o) => o,
-            Err(_) => continue,
+            Err(e) => {
+                println!("{:?}", e);
+                continue;
+            },
         };
 
         let log = string_to_json(l)?;
 
         // We are only looking for unique field names or values in a given field
         if get_uniques {
-            process_uniques(&keys, get_values, &log, &value, &mut uniques);
+            uniques.extend(process_uniques(&keys, get_values, &log, &value));
             continue;
         }
 
         // only print out logs where the given key exists  
         // and/or its value contains specified value
         if !keys.is_empty() {
-            if !check_key_value(&log, &keys, &value) { continue;; }
+            if !check_key_value(&log, &keys, &value) { continue; }
             get_key_values(&log, &fields, &delim);
             continue;
         }
