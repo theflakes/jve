@@ -32,12 +32,14 @@ fn string_to_json(input: String) -> io::Result<Value> {
     Ok(json)
 }
 
+// If targeted key is an array, concat it using comma delim
 fn join_values(array: &Vec<Value>) -> String {
     if array.len() == 1 { return array[0].to_string() }
     let temp: Vec<String> = array.into_iter().map(|n| n.to_string()).collect();
     return format!("\"{}\"", temp.join(","))
 }
 
+// Setup for havesting targeted key's values
 fn get_key_values(json: &Value, field_paths: &str, delim: &str) {
     let paths: Vec<&str> = field_paths.split(",").collect();
     let mut values = Vec::new();
@@ -50,6 +52,9 @@ fn get_key_values(json: &Value, field_paths: &str, delim: &str) {
     print_results(&values, paths, delim);
 }
 
+/*
+   Recursively traverse Json structure to build array of values found in a key across all logs
+*/
 fn traverse_json_value(json: &Value, field_names: &[&str], values: &mut Vec<Value>) {
     if let Some((first_field_name, remaining_field_names)) = field_names.split_first() {
         match json {
@@ -72,42 +77,23 @@ fn traverse_json_value(json: &Value, field_names: &[&str], values: &mut Vec<Valu
     }
 }
 
-fn print_vec(values: &Vec<String>) {
-    for v in values {
-        println!("{}", v);
-    }
-}
-
-fn print_uniques(mut uniques: HashSet<String>) {
-    let mut values: Vec<String> = uniques.into_iter().collect();
+fn print_uniques(mut uniques: &HashSet<String>) {
+    let mut values: Vec<String> = uniques.into_iter().cloned().collect();
     values.sort();
     values.retain(|v| v != "");
-    print_vec(&values);
+    println!("{:#?}", values);
 }
 
-fn get_key_value(json: &Value, key: &str) -> (bool, String) {
-    let keys: Vec<&str> = key.split('.').collect();
-    let mut current_json = json;
-    for k in keys {
-        match current_json.get(k) {
-            Some(val) => current_json = val,
-            None => return (false, String::new())
-        }
-    }
-    let value = current_json.to_string().to_lowercase();
-    return (true, value)
-}
-
-fn print_header(get_uniques: bool, fields: &str, delim: &str) {
-    if !get_uniques{
-        if delim.eq("\\n") { return; }
-        match delim {
-            "\\t" => println!("{}", fields.replace(",", "\t")),
-            _ => println!("{}", fields.replace(",", &delim))
-        }
+// If not using new line delim, print field header
+fn print_header(fields: &str, delim: &str) {
+    if delim.eq("\\n") { return; }
+    match delim {
+        "\\t" => println!("{}", fields.replace(",", "\t")),
+        _ => println!("{}", fields.replace(",", &delim))
     }
 }
 
+// Recurse through json retrieving target key's values
 fn get_values_recursive(json: &Value, keys: &[&str], result: &mut HashSet<String>) {
     if let Some(key) = keys.first() {
         if let Some(value) = json.get(*key) {
@@ -126,6 +112,7 @@ fn get_values_recursive(json: &Value, keys: &[&str], result: &mut HashSet<String
     }
 }
 
+// Build dot delimited key paths as we traverse the Json structure
 fn get_new_prefix(prefix: &str, key: &str) -> String{
     let new_prefix = if prefix.is_empty() {
         key.to_string()
@@ -135,6 +122,9 @@ fn get_new_prefix(prefix: &str, key: &str) -> String{
     return new_prefix
 }
 
+/*
+   Recursively traverse Json structure to build dot delimited key paths
+*/
 fn traverse_json(json: &Value, prefix: &str, paths: &mut HashSet<String>) {
     match json {
         Value::Object(map) => {
@@ -157,28 +147,42 @@ fn traverse_json(json: &Value, prefix: &str, paths: &mut HashSet<String>) {
 }
 
 fn process_uniques(
-                    field_name: &str, 
+                    keys: &Vec<&str>, 
                     get_values: bool, 
                     log: &Value,
                     value: &str,
                     uniques: &mut HashSet<String>
                 ) {
     // Get all field names across all logs
-    if field_name.is_empty() {
+    if keys.is_empty() {
         traverse_json(log, &"".to_string(), uniques);
     } else {
-        let (key_exists, key_value) = get_key_value(&log, &field_name);
-        // return if the string specified is not found in the key's value
-        if !value.is_empty() && !key_value.contains(&value) { return }
+        if !check_key_value(log, keys, value) { return; }
         // get all uniqued values of a given field
         if get_values {
-            let keys: Vec<&str> = field_name.split('.').collect();
             get_values_recursive(&log, &keys, uniques);
         // get all uniqued field names where a given field exists in the log
-        } else if key_exists {
+        } else {
             traverse_json(log, &"".to_string(), uniques);
         }
     }
+}
+
+fn found_in_vec(values: &HashSet<String>, value: &str) -> bool {
+    for u in values {
+        if u.to_lowercase().contains(value) {
+            return true
+        }
+    }
+    return false
+}
+
+// Verify Key Value pair exist
+fn check_key_value(log: &Value, keys: &Vec<&str>, value: &str) -> bool {
+    let mut values: Vec<Value> = Vec::new();
+    traverse_json_value(log, &keys, &mut values);
+    let vs: HashSet<String> = values.iter().map(|v| v.to_string()).collect();
+    return found_in_vec(&vs, &value)
 }
 
 fn main() -> io::Result<()> {
@@ -193,9 +197,11 @@ fn main() -> io::Result<()> {
 
     let stdin = io::stdin();
 
-    print_header(get_uniques, &fields, &delim);
+    if !get_uniques { print_header(&fields, &delim) };
     
     let mut uniques = HashSet::new();
+    let mut keys: Vec<&str> = field_name.split('.').collect();
+    keys.retain(|&k| k != "");
 
     for line in stdin.lines() {
         let l = match line {
@@ -207,16 +213,14 @@ fn main() -> io::Result<()> {
 
         // We are only looking for unique field names or values in a given field
         if get_uniques {
-            process_uniques(&field_name, get_values, &log, &value, &mut uniques);
+            process_uniques(&keys, get_values, &log, &value, &mut uniques);
             continue;
         }
 
         // only print out logs where the given key exists  
         // and/or its value contains specified value
-        if !field_name.is_empty() {
-            let (key_exists, key_value) = get_key_value(&log, &field_name);
-            if !key_exists { continue; }
-            if !value.is_empty() && !key_value.contains(&value) { continue; }
+        if !keys.is_empty() {
+            if !check_key_value(&log, &keys, &value) { continue;; }
             get_key_values(&log, &fields, &delim);
             continue;
         }
@@ -227,7 +231,7 @@ fn main() -> io::Result<()> {
     }
 
     // if we were only looking for uniques, print what was found
-    if get_uniques { print_uniques(uniques) }
+    if get_uniques { print_uniques(&uniques) }
     Ok(())
 }
 
@@ -242,14 +246,14 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String)> {
     let mut get_values = false;
     let mut get_key = false;
     let mut key = String::new();
-    let mut get_value = false;
-    let mut value = String::new();
+    let mut get_string = false;
+    let mut string = String::new();
     for arg in args {
         match arg.as_str() {
             "-f" | "--fields" => get_fields = true,
             "-d" | "--delimiter" => get_delim = true,
             "-k" | "--key" => get_key = true,
-            "-s" | "--string" => get_value = true,
+            "-s" | "--string" => get_string = true,
             "-u" | "--unique" => get_uniques = true,
             "-v" | "--values" => get_values = true,
             _ => {
@@ -262,14 +266,14 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String)> {
                 } else if get_key {
                     key = arg.to_string();
                     get_key = false;
-                } else if get_value {
-                    value = arg.to_string();
-                    get_value = false;
+                } else if get_string {
+                    string = arg.to_string();
+                    get_string = false;
                 }
             }
         }
     }
-    Ok((fields, delim, get_uniques, key, get_values, value.to_lowercase()))
+    Ok((fields, delim, get_uniques, key, get_values, string.to_lowercase()))
 }
 
 
