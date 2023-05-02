@@ -5,6 +5,7 @@ use std::{env, process};
 use serde_json::{Value};
 use std::collections::HashSet;
 
+
 fn print_results(output: &Vec<String>, split_fields: Vec<&str>, delim: &str) {
     match delim {
         "\\n" => {
