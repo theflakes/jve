@@ -6,15 +6,15 @@ use serde_json::{Value};
 use std::collections::HashSet;
 
 fn print_results(output: &Vec<String>, split_fields: Vec<&str>, delim: &str) {
-    if delim.eq("\\n") {
-        split_fields.iter().zip(output.iter())
-            .map(|(a, b)| format!("{}: {}", a, b))
-            .for_each(|o| println!("[*] {}", o));
-        println!();
-    }else if delim.eq("\\t") {
-        println!("{}", output.join("\t"));
-    } else {
-        println!("{}", output.join(delim));
+    match delim {
+        "\\n" => {
+                    split_fields.iter().zip(output.iter())
+                        .map(|(a, b)| format!("{}: {}", a, b))
+                        .for_each(|o| println!("[*] {}", o));
+                    println!()
+                },
+        "\\t" => println!("{}", output.join("\t")),
+        _     => println!("{}", output.join(delim))
     }
 }
 
