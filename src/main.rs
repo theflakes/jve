@@ -323,6 +323,8 @@ Usage:
 
 Options:
     -d, --delimiter ','             Value to use to seperate key value output
+                                    - when using a new line delimiter, array values
+                                      will be comma seperated
     -f, --fields 'a.b.c.d,a.b.e'    Comma seperated list of keys in dot notation
     -k, --key 'name_of_key'         Only examine logs where the specified key exists
     -s, --string 'string'           Only examine logs where the specified key's value
