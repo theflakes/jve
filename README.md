@@ -188,7 +188,11 @@ binary.imports.hashes.md5
 binary.imports.hashes.md5_sorted
 binary.imports.hashes.ssdeep
 binary.imports.hashes.ssdeep_sorted
-binary.imports.imports
+binary.imports.imports.count
+binary.imports.imports.lib
+binary.imports.imports.names.info
+binary.imports.imports.names.more_interesting
+binary.imports.imports.names.name
 binary.imports.lib_count
 binary.is_64
 binary.is_dotnet
@@ -203,7 +207,13 @@ binary.pe_info.legal_copyright
 binary.pe_info.original_filename
 binary.pe_info.product_name
 binary.pe_info.product_version
-binary.sections.sections
+binary.sections.sections.entropy
+binary.sections.sections.md5
+binary.sections.sections.name
+binary.sections.sections.raw_size
+binary.sections.sections.ssdeep
+binary.sections.sections.virt_address
+binary.sections.sections.virt_size
 binary.sections.total_raw_bytes
 binary.sections.total_sections
 binary.sections.total_virt_bytes

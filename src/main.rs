@@ -11,14 +11,11 @@ fn print_results(output: &Vec<String>, split_fields: Vec<&str>, delim: &str) {
             .map(|(a, b)| format!("{}: {}", a, b))
             .for_each(|o| println!("[*] {}", o));
         println!();
-        return
-    }
-    if delim.eq("\\t") {
+    }else if delim.eq("\\t") {
         println!("{}", output.join("\t"));
-        return
+    } else {
+        println!("{}", output.join(delim));
     }
-    println!("{}", output.join(delim));
-    return
 }
 
 fn string_to_json(input: String) -> io::Result<Value> {
@@ -34,94 +31,44 @@ fn string_to_json(input: String) -> io::Result<Value> {
     Ok(json)
 }
 
-fn get_field_value(json: &Value, name: &str)  -> io::Result<Value> {
-    let value = match json.get(name) {
-        Some(v) => v.to_owned(),
-        None => Value::Null,
-    };
-    Ok(value)
-}
-
-fn get_array(input: &Value, name: &String) -> io::Result<Vec<Value>> {
-    let js = match input[name].as_array() {
-        Some(j) => j.to_owned(),
-        None => Vec::new(),
-    };
-    Ok(js)
-}
-
-fn get_field(input: Value, name: &String) -> io::Result<(Value, bool, Value)> {
-    let mut is_array = false;
-    if let Some(_js) = input[name].as_array() {
-        is_array = true;
-    }
-    let value = get_field_value(&input, name)?;
-    Ok((value, is_array, input))
-}
-
-fn get_fields_array(array: &Vec<Value>, names: Vec<&str>, results: &mut Vec<Value>) -> io::Result<()> {
-    let mut is_array = false;
-    for entry in array {
-        let fields = names.clone();
-        let mut track_names = names.clone();
-        let mut value = Value::Null;
-        for n in fields {
-            track_names.remove(0);
-            (value, is_array, _) = get_field(entry.clone(), &n.to_string())?;
-            if is_array && track_names.len() != 0 { // if there are no field names left assume we want to extract the last field
-                println!("{:?}", value);
-                println!("{:?}", n);
-                let js = match value.as_array() {
-                    Some(j) => j.to_owned(),
-                    None => continue,
-                };
-                get_fields_array(&js, track_names.clone(), results)?;
-            }
-        }
-        if !value.is_null() { results.push(value); }
-    }
-    Ok(())
-}
-
-fn join_values(array: &Vec<Value>, delim: &String) -> io::Result<String> {
+fn join_values(array: &Vec<Value>) -> String {
+    if array.len() == 1 { return array[0].to_string() }
     let temp: Vec<String> = array.into_iter().map(|n| n.to_string()).collect();
-    Ok(format!("\"{}\"", temp.join(delim)))
+    return format!("\"{}\"", temp.join(","))
 }
 
-fn get_fields(log: &Value, fields: &String, delim: &String) -> io::Result<()> {
-    let split_fields: Vec<&str> = fields.split(",").collect();
-    let mut output = Vec::new(); // vec to build final output
-    let mut results = Vec::new();
-    for field in split_fields.iter() {
-        let names: Vec<&str> = field.split(".").collect();
-        let mut track_names = names.clone(); // needed for when we hit a field that is an array
-        let mut is_array = false; // if we hit a value that is an array, we need to treat it differently
-        let mut json = log.clone();
-        let mut value = Value::Null;
-        let mut previous_value = Value::Null; // track previous json object
-        let mut previous_name = String::new(); // track previously used json field name
-        let mut array_values_concat = String::new();
-        for n in names {
-            if is_array { // detecting arrays is working, but logic is horrible I think, prob can be done better
-                let js = get_array(&previous_value.clone(), &previous_name)?;
-                get_fields_array(&js, track_names.clone(), &mut results)?;
-                array_values_concat = join_values(&results, delim)?;
-                break; // if we hit an array we treat the rest of the parsing differently
-            }
-            track_names.remove(0); // keep track of field names already used by removing them from this vec
-            (value, is_array, previous_value) = get_field(json, &n.to_string())?;
-            previous_name = n.to_string(); // if we run into an array, we need the previously used field name to start parsing the array
-            json = value.clone();
-        }
-        if is_array && value.is_null() { value = previous_value.clone() }
-        if is_array && !array_values_concat.is_empty() {
-            output.push(array_values_concat);
-            continue;
-        }
-        output.push(value.to_string());
+fn get_key_values(json: &Value, field_paths: &str, delim: &str) {
+    let paths: Vec<&str> = field_paths.split(",").collect();
+    let mut values = Vec::new();
+    for path in paths.iter() {
+        let field_names: Vec<&str> = path.split('.').collect();
+        let mut results = Vec::new();
+        traverse_json_value(json, &field_names, &mut results);
+        values.push(join_values(&results));
     }
-    print_results(&output, split_fields, delim);
-    Ok(())
+    print_results(&values, paths, delim);
+}
+
+fn traverse_json_value(json: &Value, field_names: &[&str], values: &mut Vec<Value>) {
+    if let Some((first_field_name, remaining_field_names)) = field_names.split_first() {
+        match json {
+            Value::Object(map) => {
+                if let Some(value) = map.get(*first_field_name) {
+                    if remaining_field_names.is_empty() {
+                        values.push(value.clone());
+                    } else {
+                        traverse_json_value(value, remaining_field_names, values);
+                    }
+                }
+            }
+            Value::Array(vec) => {
+                for value in vec {
+                    traverse_json_value(value, field_names, values);
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 fn print_vec(values: &Vec<String>) {
@@ -152,7 +99,11 @@ fn get_key_value(json: &Value, key: &str) -> (bool, String) {
 
 fn print_header(get_uniques: bool, fields: &str, delim: &str) {
     if !get_uniques{
-        if !delim.eq("\\n") { println!("{}", fields.replace(",", &delim)) }
+        if delim.eq("\\n") { return; }
+        match delim {
+            "\\t" => println!("{}", fields.replace(",", "\t")),
+            _ => println!("{}", fields.replace(",", &delim))
+        }
     }
 }
 
@@ -181,32 +132,39 @@ fn get_values_recursive(json: &Value, keys: &[&str], result: &mut Vec<String>) {
     }
 }
 
-fn traverse_json(json: &Value, prefix: String, paths: &mut HashSet<String>) {
+fn get_new_prefix(prefix: &str, key: &str) -> String{
+    let new_prefix = if prefix.is_empty() {
+        key.to_string()
+    } else {
+        format!("{}.{}", prefix, key)
+    };
+    return new_prefix
+}
+
+fn traverse_json(json: &Value, prefix: &str, paths: &mut HashSet<String>) {
     match json {
         Value::Object(map) => {
             for (key, value) in map {
-                let new_prefix = if prefix.is_empty() {
-                    key.to_string()
-                } else {
-                    format!("{}.{}", prefix, key)
-                };
-                traverse_json(value, new_prefix, paths);
+                let new_prefix = get_new_prefix(&prefix, key);
+                traverse_json(value, &new_prefix, paths);
             }
         }
         Value::Array(vec) => {
             if let Some(first_element) = vec.first() {
                 traverse_json(first_element, prefix.clone(), paths);
+            } else {
+                paths.insert(prefix.to_string());
             }
         }
         _ => {
-            paths.insert(prefix);
+            paths.insert(prefix.to_string());
         }
     }
 }
 
 fn get_field_paths(json: &Value) -> Vec<String> {
     let mut paths = HashSet::new();
-    traverse_json(json, "".to_string(), &mut paths);
+    traverse_json(json, &"".to_string(), &mut paths);
     let mut paths_vec: Vec<String> = paths.into_iter().collect();
     paths_vec.sort();
     paths_vec
@@ -275,13 +233,13 @@ fn main() -> io::Result<()> {
             let (key_exists, key_value) = get_key_value(&log, &field_name);
             if !key_exists { continue; }
             if !value.is_empty() && !key_value.contains(&value) { continue; }
-            get_fields(&log, &fields, &delim)?;
+            get_key_values(&log, &fields, &delim);
             continue;
         }
 
         // we just want all fields specified 
         // including null results from log not having those fields
-        get_fields(&log, &fields, &delim)?;
+        get_key_values(&log, &fields, &delim);
     }
 
     // if we were only looking for uniques, print what was found
