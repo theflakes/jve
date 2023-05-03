@@ -183,11 +183,41 @@ fn found_in_vec(values: &HashSet<String>, value: &str) -> bool {
     return false
 }
 
+// Does the dot delimited Json key path exists?
+fn path_exists(json: &Value, keys: &[&str]) -> bool {
+    if let Some((first_key, remaining_keys)) = keys.split_first() {
+        match json {
+            Value::Object(map) => {
+                if let Some(value) = map.get(*first_key) {
+                    if remaining_keys.is_empty() {
+                        true
+                    } else {
+                        path_exists(value, remaining_keys)
+                    }
+                } else {
+                    false
+                }
+            }
+            Value::Array(array) => {
+                if let Some(first_element) = array.first() {
+                    path_exists(first_element, keys)
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        }
+    } else {
+        false
+    }
+}
+
 // Verify Key Value pair exist
 fn check_key_value(log: &Value, keys: &Vec<&str>, value: &str) -> bool {
+    if value.is_empty() { return path_exists(log, &keys) }
     let mut values: HashSet<String> = HashSet::new();
     get_values_recursive(log, &keys, &mut values);
-    if value.is_empty() && !values.is_empty() { return true; }
+    if values.is_empty() { return false; }
     return found_in_vec(&values, &value)
 }
 
