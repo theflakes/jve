@@ -306,8 +306,7 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String)> {
     if fields.is_empty() ^ delim.is_empty() {
         println!("If either '--delimiter' or '--fields' is used, both must be used.");
         print_help();
-    }
-    if !string.is_empty() && key.is_empty() {
+    } else if !string.is_empty() && key.is_empty() {
         println!("If '--string' is used then '--key' must be used.");
         print_help();
     }
