@@ -1,9 +1,11 @@
 extern crate serde_json;
+extern crate itertools;
 
 use std::io;
 use std::{env, process};
 use serde_json::{Value};
 use std::collections::HashSet;
+use itertools::Itertools;
 
 
 fn print_results(output: &Vec<String>, split_fields: Vec<&str>, delim: &str) {
@@ -38,12 +40,22 @@ fn string_to_json(input: String) -> io::Result<Value> {
     Ok(json)
 }
 
+fn get_first_elem(set: &HashSet<String>) -> Option<&String> {
+    set.iter().next()
+}
+
 // If targeted key is an array, concat it using comma delim
-fn join_values(array: &Vec<Value>) -> String {
-    if array.len() == 1 { return array[0].to_string() }
-    let mut temp: Vec<String> = array.into_iter().map(|n| n.to_string()).collect();
-    temp.retain(|t| t != "");
-    return format!("\"{}\"", temp.join(","))
+fn join_values(array: &HashSet<String>) -> String {
+    let mut output = String::new();
+    if array.is_empty() { return output }
+    if array.len() == 1 { 
+        output = match get_first_elem(array) {
+            Some(o) => o.into(),
+            _ => String::new()
+        };
+        return output
+    }
+    return format!("\"{}\"", array.iter().join(","))
 }
 
 // Setup for havesting targeted key's values
@@ -52,7 +64,7 @@ fn get_key_values(json: &Value, field_paths: &str, delim: &str) {
     let mut values = Vec::new();
     for path in paths.iter() {
         let field_names: Vec<&str> = path.split('.').collect();
-        let mut results = Vec::new();
+        let mut results: HashSet<String> = HashSet::new();
         traverse_json_value(json, &field_names, &mut results);
         values.push(join_values(&results));
     }
@@ -62,13 +74,13 @@ fn get_key_values(json: &Value, field_paths: &str, delim: &str) {
 /*
    Recursively traverse Json structure to build array of values found in a key across all logs
 */
-fn traverse_json_value(json: &Value, field_names: &[&str], values: &mut Vec<Value>) {
+fn traverse_json_value(json: &Value, field_names: &[&str], values: &mut HashSet<String>) {
     if let Some((first_field_name, remaining_field_names)) = field_names.split_first() {
         match json {
             Value::Object(map) => {
                 if let Some(value) = map.get(*first_field_name) {
                     if remaining_field_names.is_empty() {
-                        values.push(value.clone());
+                        values.insert(value.to_string());
                     } else {
                         traverse_json_value(value, remaining_field_names, values);
                     }
@@ -87,7 +99,7 @@ fn traverse_json_value(json: &Value, field_names: &[&str], values: &mut Vec<Valu
 fn print_uniques(mut uniques: &HashSet<String>) {
     let mut values: Vec<String> = uniques.into_iter().cloned().collect();
     values.sort();
-    println!("{:#?}", values);
+    for v in values { println!("{}", v) }
 }
 
 // If not using new line delim, print field header
@@ -96,25 +108,6 @@ fn print_header(fields: &str, delim: &str) {
     match delim {
         "\\t" => println!("{}", fields.replace(",", "\t")),
         _ => println!("{}", fields.replace(",", &delim))
-    }
-}
-
-// Recurse through json retrieving target key's values
-fn get_values_recursive(json: &Value, keys: &[&str], result: &mut HashSet<String>) {
-    if let Some(key) = keys.first() {
-        if let Some(value) = json.get(*key) {
-            if value.is_array() {
-                for item in value.as_array().unwrap() {
-                    get_values_recursive(item, &keys[1..], result);
-                }
-            } else if value.is_object() {
-                get_values_recursive(value, &keys[1..], result);
-            } else if keys.len() == 1 {
-                if let Some(value_str) = value.as_str() {
-                    result.insert(value_str.to_string());
-                }
-            }
-        }
     }
 }
 
@@ -165,7 +158,7 @@ fn process_uniques(
         if !check_key_value(&log, &keys, &value) { return uniques; }
         // get all uniqued values of a given field
         if get_values {
-            get_values_recursive(&log, &keys, &mut uniques);
+            traverse_json_value(&log, &keys, &mut uniques);
         // get all uniqued field names where a given field exists in the log
         } else {
             traverse_json(log, &"".to_string(), &mut uniques);
@@ -216,7 +209,7 @@ fn path_exists(json: &Value, keys: &[&str]) -> bool {
 fn check_key_value(log: &Value, keys: &Vec<&str>, value: &str) -> bool {
     if value.is_empty() { return path_exists(log, &keys) }
     let mut values: HashSet<String> = HashSet::new();
-    get_values_recursive(log, &keys, &mut values);
+    traverse_json_value(log, &keys, &mut values);
     if values.is_empty() { return false; }
     return found_in_vec(&values, &value)
 }

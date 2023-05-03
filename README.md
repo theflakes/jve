@@ -73,31 +73,29 @@ filename,hashes.md5,entropy,binary.sections.sections.name,binary.sections.sectio
 #### Example output parsing unique values from a common field across all JSON logs
 ```
 cat .\files.json | .\jve --unique --values --key "hashes.md5"
-
-[
-    "0095131c89ae04249c38df317c9ab5db",
-    "00dda192fddd27e6c41caacd4c0a019f",
-    "01751732ded6c06d7f8450061e000330",
-    "01c168bb5c68e1be05d882fe275f2fcc",
-    "044b14fc5d2b17b20e5661de71769b1c",
-    "047a4dea33b7a6fd424e1434f6d35cf3",
-    "056c884994b0888c896059c30ecc115b",
-    "05988391d71c3f722fafaf83b7fa8844",
-    "05ee11a5e23b15784437aec3cb6d4326",
-    "060ca013a3053bbd14c2e00d1b211059",
-    "07020432461ee3638c59b2db3d0e32a1",
-    "0715643fa01c1a00be8cdb27d4c0078d",
-    "076b86676f8cba2a984a87e0c237c3f8",
-    "08381a80f7eee85d433e57b80b581e28",
-    "0888894e0d897ae54d0af149c70a681f",
-    "09871487eb94a6c0bec4e7be41100eed",
-    "09ca7b8db333d063b520898fd3a9d6c7",
-    "0acc2492f4fc5ee02dbc51c9564f5554",
-    "0b51b646f7f327aa07756f3ad8a8ec95",
-    "0baf7cd61b2fa93854903d73f7d4137d",
-    "0be9fc4248d0726b625ac099a1dd7ff8",
-    "0c3cecbe29fa62837a85216319781f4b",
-]
+"ee4e79fc4ade3bd7138537f7cd21b430"
+"ee85b6c6c6b11b21ca5366b38bedf58a"
+"f056cfc66651b933386b72bd11197b38"
+"f17aaa27f0a9f1945833f8ce30f84248"
+"f22095aaef76e2e5b2f870c2e0da7f54"
+"f2b9a18f143c0213c55d74d01b0e01c6"
+"f2fe47e47b9faa0646c2626a1b933f14"
+"f31f030a35e983f31ceaf7cb4188c9e2"
+"f3679a7fef38af94522fec6ad112adb2"
+"f41b90b2f86bbdef77a8f643021cb442"
+"f44a58405dbc1000ff607d0feaa61c70"
+"f546bc07cc171fd67e4219cd7c840b81"
+"f624c1e424863ea88d07faa1021cf80b"
+"f62c0bb8d88f0f24140a4fa811cac4d8"
+"f7f13171fe6177ba2ae285e125e52fe8"
+"f829f05c9286170c2598589a45d0990d"
+"f8ed4945674fd1dd8eb4de0394eaed26"
+"f9a10da1d4a97c1c9772c2adad4b6e23"
+"f9f108d33da837ae37336b9b528e1fbe"
+"fa4a3dcce2fcf5328bead6fde5f52c95"
+"fa5a792fdf9398cd686692d7c1b224f2"
+"fe4219cdc6b63686e32a7c3cb16f0835"
+"ff04321347f63e773591869e23d13b7f"
 ```
 #### Example output using new line as a delimiter recursing through sub directories
 ```
