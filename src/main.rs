@@ -190,25 +190,25 @@ fn path_exists(json: &Value, keys: &[&str]) -> bool {
             Value::Object(map) => {
                 if let Some(value) = map.get(*first_key) {
                     if remaining_keys.is_empty() {
-                        true
+                        return true
                     } else {
                         path_exists(value, remaining_keys)
                     }
                 } else {
-                    false
+                    return false
                 }
             }
             Value::Array(array) => {
                 if let Some(first_element) = array.first() {
                     path_exists(first_element, keys)
                 } else {
-                    false
+                    return false
                 }
             }
-            _ => false,
+            _ => return false,
         }
     } else {
-        false
+        return false
     }
 }
 
