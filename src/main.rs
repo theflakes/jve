@@ -176,7 +176,7 @@ fn found_in_vec(values: &HashSet<String>, value: &str) -> bool {
     return false
 }
 
-// Does the dot delimited Json key path exists?
+// Does the dot delimited Json key path exist?
 fn path_exists(json: &Value, keys: &[&str]) -> bool {
     if let Some((first_key, remaining_keys)) = keys.split_first() {
         match json {
