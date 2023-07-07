@@ -12,7 +12,6 @@ license = "MIT"
 [dependencies]
 serde_json = "*"
 itertools = "*"
-
 [profile.release]
 lto = "fat"
 panic = 'abort'

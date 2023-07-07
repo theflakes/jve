@@ -1,10 +1,14 @@
+/*
+    Ugh, not experienced in Rust enough to code this well. I am sorry.
+*/
+
 extern crate serde_json;
 extern crate itertools;
 
 use std::io;
 use std::{env, process};
 use serde_json::{Value};
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use itertools::Itertools;
 
 
@@ -96,10 +100,22 @@ fn traverse_json_value(json: &Value, field_names: &[&str], values: &mut HashSet<
     }
 }
 
-fn print_uniques(mut uniques: &HashSet<String>) {
+fn print_unique_values(mut uniques: &HashSet<String>) {
     let mut values: Vec<String> = uniques.into_iter().cloned().collect();
     values.sort();
     for v in values { println!("{}", v) }
+}
+
+fn print_unique_keys(mut uniques: &HashMap<String, HashSet<String>>) {
+    //println!("{:?}", uniques);
+    //println!("{}", serde_json::to_string_pretty(&uniques).unwrap());
+    for key in uniques.keys().sorted() {
+        let v = uniques[key].clone();
+        let mut values: Vec<String> = v.into_iter().collect();
+        values.sort();
+        let output = format!("{}: {:?}", key, values);
+        println!("{}", output);
+    }
 }
 
 // If not using new line delim, print field header
@@ -121,30 +137,7 @@ fn get_new_prefix(prefix: &str, key: &str) -> String{
     return new_prefix
 }
 
-/*
-   Recursively traverse Json structure to build dot delimited key paths
-*/
-fn traverse_json(json: &Value, prefix: &str, paths: &mut HashSet<String>) {
-    match json {
-        Value::Object(map) => {
-            for (key, value) in map {
-                let new_prefix = get_new_prefix(&prefix, key);
-                traverse_json(value, &new_prefix, paths);
-            }
-        }
-        Value::Array(vec) => {
-            if let Some(first_element) = vec.first() {
-                traverse_json(first_element, prefix.clone(), paths);
-            }
-            paths.insert(prefix.to_string());
-        }
-        _ => {
-            paths.insert(prefix.to_string());
-        }
-    }
-}
-
-fn process_uniques(
+fn get_unique_values(
                     keys: &Vec<&str>, 
                     get_values: bool, 
                     log: &Value,
@@ -152,17 +145,67 @@ fn process_uniques(
                 ) -> HashSet<String> {
     let mut uniques: HashSet<String> = HashSet::new();
     // Get all field names across all logs
+    if !check_key_value(&log, &keys, &value) { return uniques; }
+    // get all uniqued values of a given field
+    traverse_json_value(&log, &keys, &mut uniques);
+    return uniques
+}
+
+fn get_value_type(value: &Value) -> String {
+    match value {
+        Value::Null => "null".to_string(),
+        Value::Bool(_) => "boolean".to_string(),
+        Value::Number(_) => "number".to_string(),
+        Value::String(_) => "string".to_string(),
+        Value::Array(_) => "array".to_string(),
+        Value::Object(_) => "object".to_string()
+    }
+}
+
+/*
+   Recursively traverse Json structure to build dot delimited key paths
+   and also report key value types
+*/
+fn traverse_json_key(json: &Value, prefix: &str, paths: &mut HashMap<String, HashSet<String>>) {
+    match json {
+        Value::Object(map) => {
+            for (key, value) in map {
+                let new_prefix = get_new_prefix(&prefix, key);
+                traverse_json_key(value, &new_prefix, paths);
+            }
+        }
+        Value::Array(vec) => {
+            if let Some(first_element) = vec.first() {
+                traverse_json_key(first_element, prefix.clone(), paths);
+            }
+            let entry = paths.entry(prefix.to_owned()).or_insert(HashSet::new());
+            entry.insert(get_value_type(&json));
+            // get the type of the first value found in the array and append to the HashSet
+            if !json.as_array().unwrap().is_empty() {
+                let first_value = json.as_array().unwrap().first().unwrap();
+                entry.insert(get_value_type(&first_value));
+            }
+        }
+        _ => {
+            let entry = paths.entry(prefix.to_owned()).or_insert(HashSet::new());
+            entry.insert(get_value_type(&json));
+        }
+    }
+}
+
+fn get_unique_keys(
+                    keys: &Vec<&str>, 
+                    get_values: bool, 
+                    log: &Value,
+                    value: &str
+                ) -> HashMap<String, HashSet<String>> {
+    let mut uniques = HashMap::new();
+    // Get all field names across all logs
     if keys.is_empty() {
-        traverse_json(log, &"".to_string(), &mut uniques);
+        traverse_json_key(log, &"".to_string(), &mut uniques);
     } else {
         if !check_key_value(&log, &keys, &value) { return uniques; }
-        // get all uniqued values of a given field
-        if get_values {
-            traverse_json_value(&log, &keys, &mut uniques);
-        // get all uniqued field names where a given field exists in the log
-        } else {
-            traverse_json(log, &"".to_string(), &mut uniques);
-        }
+        traverse_json_key(log, &"".to_string(), &mut uniques);
     }
     return uniques
 }
@@ -228,7 +271,8 @@ fn main() -> io::Result<()> {
 
     if !get_uniques { print_header(&fields, &delim) };
     
-    let mut uniques = HashSet::new();
+    let mut unique_values = HashSet::new();
+    let mut unique_keys: HashMap<String, HashSet<String>> = HashMap::new();
     let no_whitespace = field_name.replace(char::is_whitespace, "");
     let mut keys: Vec<&str> = no_whitespace.split('.').collect();
     keys.retain(|&k| k != "");
@@ -243,7 +287,14 @@ fn main() -> io::Result<()> {
 
         // We are only looking for unique field names or values in a given field
         if get_uniques {
-            uniques.extend(process_uniques(&keys, get_values, &log, &value));
+            if get_values {
+                unique_values.extend(get_unique_values(&keys, get_values, &log, &value));
+            } else {
+                for (k, v) in get_unique_keys(&keys, get_values, &log, &value) {
+                    let entry = unique_keys.entry(k).or_insert(HashSet::new());
+                    entry.extend(v);
+                }
+            }
             continue;
         }
 
@@ -261,7 +312,13 @@ fn main() -> io::Result<()> {
     }
 
     // if we were only looking for uniques, print what was found
-    if get_uniques { print_uniques(&uniques) }
+    if get_uniques {
+        if get_values { 
+            print_unique_values(&unique_values);
+        } else {
+            print_unique_keys(&unique_keys);
+        }
+    }
     Ok(())
 }
 
@@ -358,7 +415,11 @@ Options:
                                     - case insensitive match
     -u, --unique                    Get uniqued entries for: 
                                     - if used by itself, all field names across 
-                                      all logs
+                                      all logs and their data types
+                                    - if the field is an array, the second data type
+                                      will be that of the values, unless the array 
+                                      is empty then there will not be a second data 
+                                      type listed
                                     - unique key names of logs wherein the given 
                                       key exists
                                     - if '--values' is also specified, list all the

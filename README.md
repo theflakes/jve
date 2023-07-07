@@ -44,7 +44,11 @@ Options:
                                     - case insensitive match
     -u, --unique                    Get uniqued entries for: 
                                     - if used by itself, all field names across 
-                                      all logs
+                                      all logs and their data types
+                                    - if the field is an array, the second data type
+                                      will be that of the values, unless the array 
+                                      is empty then there will not be a second data 
+                                      type listed
                                     - unique key names of logs wherein the given 
                                       key exists
                                     - if '--values' is also specified, list all the
