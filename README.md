@@ -152,103 +152,87 @@ fmd.exe c:\ -d 2 | jve -d "\n" --fields "filename,hashes.md5,entropy,binary.sect
 #### Print a dot delimited list of all key names
 ```
 cat .\res.txt | .\jve --unique
-ads
-ads.bytes
-ads.first_256_bytes
-ads.name
-binary
-binary.entry_point
-binary.exports
-binary.exports.count
-binary.exports.hashes
-binary.exports.hashes.md5
-binary.exports.hashes.ssdeep
-binary.exports.names
-binary.imports
-binary.imports.func_count
-binary.imports.hashes
-binary.imports.hashes.md5
-binary.imports.hashes.md5_sorted
-binary.imports.hashes.ssdeep
-binary.imports.hashes.ssdeep_sorted
-binary.imports.imports
-binary.imports.imports.count
-binary.imports.imports.lib
-binary.imports.imports.names
-binary.imports.imports.names.info
-binary.imports.imports.names.more_interesting
-binary.imports.imports.names.name
-binary.imports.lib_count
-binary.is_64
-binary.is_dotnet
-binary.is_lib
-binary.linker
-binary.linker.major_version
-binary.linker.minor_version
-binary.pe_info
-binary.pe_info.company_name
-binary.pe_info.file_description
-binary.pe_info.file_version
-binary.pe_info.internal_name
-binary.pe_info.legal_copyright
-binary.pe_info.original_filename
-binary.pe_info.product_name
-binary.pe_info.product_version
-binary.sections
-binary.sections.sections
-binary.sections.sections.entropy
-binary.sections.sections.md5
-binary.sections.sections.name
-binary.sections.sections.raw_size
-binary.sections.sections.ssdeep
-binary.sections.sections.virt_address
-binary.sections.sections.virt_size
-binary.sections.total_raw_bytes
-binary.sections.total_sections
-binary.sections.total_virt_bytes
-binary.timestamps
-binary.timestamps.compile
-binary.timestamps.debug
-bytes
-directory
-entropy
-extension
-filename
-hashes
-hashes.md5
-hashes.sha1
-hashes.sha256
-hashes.ssdeep
-is_hidden
-is_link
-link
-link.abs_path
-link.arguments
-link.comment
-link.drive_serial_number
-link.drive_type
-link.flags
-link.hotkey
-link.icon_location
-link.rel_path
-link.show_command
-link.volume_label
-link.working_dir
-mime_type
-path
-runtime_env
-runtime_env.device_type
-runtime_env.run_as_admin
-runtime_env.timestamp
-strings
-timestamps
-timestamps.access_fn
-timestamps.access_si
-timestamps.create_fn
-timestamps.create_si
-timestamps.mft_record
-timestamps.modify_fn
-timestamps.modify_si
+ads: ["array"]
+binary.entry_point: ["string"]
+binary.exports.count: ["number"]
+binary.exports.hashes.md5: ["string"]
+binary.exports.hashes.ssdeep: ["string"]
+binary.exports.names: ["array"]
+binary.imports.func_count: ["number"]
+binary.imports.hashes.md5: ["string"]
+binary.imports.hashes.md5_sorted: ["string"]
+binary.imports.hashes.ssdeep: ["string"]
+binary.imports.hashes.ssdeep_sorted: ["string"]
+binary.imports.imports: ["array", "object"]
+binary.imports.imports.count: ["number"]
+binary.imports.imports.lib: ["string"]
+binary.imports.imports.names: ["array", "object"]
+binary.imports.imports.names.info: ["string"]
+binary.imports.imports.names.more_interesting: ["boolean"]
+binary.imports.imports.names.name: ["string"]
+binary.imports.lib_count: ["number"]
+binary.is_64: ["boolean"]
+binary.is_dotnet: ["boolean"]
+binary.is_lib: ["boolean"]
+binary.linker.major_version: ["number"]
+binary.linker.minor_version: ["number"]
+binary.pe_info.company_name: ["string"]
+binary.pe_info.file_description: ["string"]
+binary.pe_info.file_version: ["string"]
+binary.pe_info.internal_name: ["string"]
+binary.pe_info.legal_copyright: ["string"]
+binary.pe_info.original_filename: ["string"]
+binary.pe_info.product_name: ["string"]
+binary.pe_info.product_version: ["string"]
+binary.sections.sections: ["array", "object"]
+binary.sections.sections.entropy: ["number"]
+binary.sections.sections.md5: ["string"]
+binary.sections.sections.name: ["string"]
+binary.sections.sections.raw_size: ["number"]
+binary.sections.sections.ssdeep: ["string"]
+binary.sections.sections.virt_address: ["string"]
+binary.sections.sections.virt_size: ["number"]
+binary.sections.total_raw_bytes: ["number"]
+binary.sections.total_sections: ["number"]
+binary.sections.total_virt_bytes: ["number"]
+binary.timestamps.compile: ["string"]
+binary.timestamps.debug: ["string"]
+bytes: ["number"]
+directory: ["string"]
+entropy: ["number"]
+extension: ["string"]
+filename: ["string"]
+hashes.md5: ["string"]
+hashes.sha1: ["string"]
+hashes.sha256: ["string"]
+hashes.ssdeep: ["string"]
+is_hidden: ["boolean", "string"]
+is_link: ["boolean"]
+link.abs_path: ["string"]
+link.arguments: ["string"]
+link.comment: ["string"]
+link.drive_serial_number: ["string"]
+link.drive_type: ["string"]
+link.flags: ["string"]
+link.hotkey: ["string"]
+link.icon_location: ["string"]
+link.rel_path: ["string"]
+link.show_command: ["string"]
+link.volume_label: ["string"]
+link.working_dir: ["string"]
+mime_type: ["string"]
+path: ["string"]
+runtime_env.device_type: ["string"]
+runtime_env.run_as_admin: ["boolean"]
+runtime_env.timestamp: ["string"]
+strings: ["array"]
+timestamps.access_fn: ["string"]
+timestamps.access_si: ["string"]
+timestamps.create_fn: ["string"]
+timestamps.create_si: ["string"]
+timestamps.mft_record: ["string"]
+timestamps.modify_fn: ["string"]
+timestamps.modify_si: ["string"]
 ```
 #### Example log parsed by JVE -> using the [File Meta Data tool](https://github.com/theflakes/fmd)
 ```
