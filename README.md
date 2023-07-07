@@ -4,7 +4,7 @@ Cmd line Linux and Windows utility that accepts json via standard in (piping) an
 ```
 Author: Brian Kellogg
 License: MIT
-Purpose: Extract json field values
+Purpose: Extract json fields and values in various ways.
 
 JVE - Json Value Extractor
 
@@ -44,11 +44,15 @@ Options:
                                     - case insensitive match
     -u, --unique                    Get uniqued entries for: 
                                     - if used by itself, all field names across 
-                                      all logs and their data types
+                                      all logs and their data types are printed out
                                     - if the field is an array, the second data type
                                       will be that of the values, unless the array 
                                       is empty then there will not be a second data 
                                       type listed
+                                    - if more than one data type is listed for a field
+                                      then there are at least two logs with the same
+                                      field name but containing differing value
+                                      types
                                     - unique key names of logs wherein the given 
                                       key exists
                                     - if '--values' is also specified, list all the

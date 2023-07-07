@@ -375,7 +375,7 @@ fn print_help() {
     let help = "
 Author: Brian Kellogg
 License: MIT
-Purpose: Extract json field values
+Purpose: Extract json fields and values in various ways.
 
 JVE - Json Value Extractor
 
