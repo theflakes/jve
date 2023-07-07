@@ -153,7 +153,7 @@ fmd.exe c:\ -d 2 | jve -d "\n" --fields "filename,hashes.md5,entropy,binary.sect
 [*] binary.imports.imports.lib: ""mscoree.dll""
 [*] binary.imports.imports.names: "["_CorExeMain"]"
 ```
-#### Print a dot delimited list of all key names
+#### Print a dot delimited list of all key names and all value types for each seen across all logs.
 ```
 cat .\res.txt | .\jve --unique
 ads: ["array"]
