@@ -384,7 +384,7 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String, bool)> 
             "-s" | "--string" => get_string = true,
             "-u" | "--unique" => get_uniques = true,
             "-v" | "--values" => get_values = true,
-            "-z" | "--keysort" => key_sort = true,
+            "-z" | "--valuesort" => key_sort = true,
             _ => {
                 if get_fields {
                     fields = arg.to_string();

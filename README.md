@@ -13,9 +13,9 @@ This program accepts piping line delimited json input via output from some previ
 Usage: 
     cat logs.json | jve --delimiter ',' --fields 'filename,hashes.md5,hashes.ssdeep'
         - comma seperated output
-    cat logs.json | jve -d '\n' -f 'filename,hashes.md5,hashes.ssdeep'
+    cat logs.json | jve -d '\\n' -f 'filename,hashes.md5,hashes.ssdeep'
         - output to a new line for each field
-    cat logs.json | jve -d '\t' -f 'filename,hashes.md5,hashes.ssdeep'
+    cat logs.json | jve -d '\\t' -f 'filename,hashes.md5,hashes.ssdeep'
         - tab seperated output
     cat logs.json | jve -d ',' -f 'filename,hashes.md5' --key 'path'
         - comma seperated list of all fields only where the key named 'path' exists
@@ -29,8 +29,10 @@ Usage:
         - Collect and print a uniqued list of all key names found in logs with 
           the specified 'key_name'
     cat logs.json | jve --unique --values --key 'key_name'
-        - print a uniqued list of all values found in the key 'key_name' 
-          across all logs
+        - print a uniqued list of all values found in the key 'key_name' across all logs
+    cat logs.json | jve --unique --values --key 'key_name' -z
+        - print a uniqued list of all values found in the key 'key_name' across all logs 
+          and sort by the values, not the count of each unique value
 
 Options:
     -d, --delimiter ','             Value to use to seperate key value output
@@ -44,8 +46,8 @@ Options:
                                     - case insensitive match
     -u, --unique                    Get uniqued entries for: 
                                     - if used by itself, all field names across 
-                                      all logs and their data types are printed out
-                                    - if the field is an array, the second data type
+                                      all logs and their data types
+                                      if the field is an array, the second data type
                                       will be that of the values, unless the array 
                                       is empty then there will not be a second data 
                                       type listed
@@ -60,6 +62,7 @@ Options:
                                     - Nested key names will be dot delimited
     -v, --values                    Must be used along with '--unique' and '--key'
                                     - print the unique values of the specified key
+    -z, --valuesort                 - sort unique value by value instead of count
 
 NOTE:   If a key is an array or the key name occurs in an array, 
         this program will concatenate all array key values into a 
@@ -81,29 +84,25 @@ filename,hashes.md5,entropy,binary.sections.sections.name,binary.sections.sectio
 #### Example output parsing unique values from a common field across all JSON logs
 ```
 cat .\files.json | .\jve --unique --values --key "hashes.md5"
-"ee4e79fc4ade3bd7138537f7cd21b430"
-"ee85b6c6c6b11b21ca5366b38bedf58a"
-"f056cfc66651b933386b72bd11197b38"
-"f17aaa27f0a9f1945833f8ce30f84248"
-"f22095aaef76e2e5b2f870c2e0da7f54"
-"f2b9a18f143c0213c55d74d01b0e01c6"
-"f2fe47e47b9faa0646c2626a1b933f14"
-"f31f030a35e983f31ceaf7cb4188c9e2"
-"f3679a7fef38af94522fec6ad112adb2"
-"f41b90b2f86bbdef77a8f643021cb442"
-"f44a58405dbc1000ff607d0feaa61c70"
-"f546bc07cc171fd67e4219cd7c840b81"
-"f624c1e424863ea88d07faa1021cf80b"
-"f62c0bb8d88f0f24140a4fa811cac4d8"
-"f7f13171fe6177ba2ae285e125e52fe8"
-"f829f05c9286170c2598589a45d0990d"
-"f8ed4945674fd1dd8eb4de0394eaed26"
-"f9a10da1d4a97c1c9772c2adad4b6e23"
-"f9f108d33da837ae37336b9b528e1fbe"
-"fa4a3dcce2fcf5328bead6fde5f52c95"
-"fa5a792fdf9398cd686692d7c1b224f2"
-"fe4219cdc6b63686e32a7c3cb16f0835"
-"ff04321347f63e773591869e23d13b7f"
+"6d997c9924190b741f87a9e8eb7675c9": 8
+"e81ec39ff5c22e69749306e27f5ebb90": 8
+"11227b11f565de042c48654a241e9d1c": 9
+"4a25c48c20aa7e2f463fdd58e4eb125c": 9
+"e8d4207ac2dae00b3cd990b0e3c30ddf": 9
+"fb249730b63d1a73dd9abe0301f70994": 9
+"7a6e4442304d884a1c1683ab50a8dd0d": 9
+"26551cada6ebb5308a98d0226331da5c": 10
+"320d3b6dfd3d1ff4bae44c3c56310233": 11
+"898adc592b6c054b7adfeb4b3b15b628": 12
+"73e29491b7e1afdb91dbe22ab82f6bc4": 13
+"8e00541603aaee4a6d115d40754abe08": 14
+"a0a7c3fff21f2aea3cfa1d0316dd816c": 14
+"0f07815c9a65417671700f5266ef0eaa": 15
+"b60e0c41efefaff09aad48e3362ea9a5": 15
+"7cd4a31205ec80d2e21b36ed05872545": 15
+"f393656ca7d03c11b861b4398a5730b6": 27
+"e04679e5f3dcf6950ad5749798d48f4c": 36
+"d41d8cd98f00b204e9800998ecf8427e": 227
 ```
 #### Example output using new line as a delimiter recursing through sub directories
 ```
