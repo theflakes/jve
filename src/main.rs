@@ -8,7 +8,7 @@ extern crate itertools;
 
 use std::io;
 use std::{env, process};
-use serde_json::{Value};
+use serde_json::Value;
 use std::collections::{HashSet, HashMap};
 use itertools::Itertools;
 
@@ -101,10 +101,49 @@ fn traverse_json_value(json: &Value, field_names: &[&str], values: &mut HashSet<
     }
 }
 
-fn print_unique_values(mut uniques: &HashSet<String>) {
-    let mut values: Vec<String> = uniques.into_iter().cloned().collect();
-    values.sort();
-    for v in values { println!("{}", v) }
+
+/*
+   Recursively traverse Json structure to build array of values found in a key across all logs
+*/
+fn traverse_json_values_unique(json: &Value, field_names: &[&str], uniques: &mut HashMap<String, u64>) {
+    if let Some((first_field_name, remaining_field_names)) = field_names.split_first() {
+        match json {
+            Value::Object(map) => {
+                if let Some(value) = map.get(*first_field_name) {
+                    if remaining_field_names.is_empty() {
+                        *uniques.entry(value.to_string()).or_insert(0) += 1;
+                    } else {
+                        traverse_json_values_unique(value, remaining_field_names, uniques);
+                    }
+                }
+            }
+            Value::Array(vec) => {
+                for value in vec {
+                    traverse_json_values_unique(value, field_names, uniques);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn print_unique_values(mut uniques: &HashMap<String, u64>, key_sort: bool) {
+    let mut u: Vec<(&String, &u64)> = uniques.iter().collect();
+    if key_sort {
+        // sort by the key based upon whether its a string or integer
+        u.sort_by(|a, b| {
+            let a_key = a.0.parse::<u64>();
+            let b_key = b.0.parse::<u64>();
+            if let (Ok(a_key), Ok(b_key)) = (a_key, b_key) {
+                a_key.cmp(&b_key)
+            } else {
+                a.0.cmp(b.0)
+            }
+        });
+    } else {
+        u.sort_by(|a, b| a.1.cmp(b.1));
+    }
+    for (k, v) in u { println!("{}: {}", k, v) }
 }
 
 fn print_unique_keys(mut uniques: &HashMap<String, HashSet<String>>) {
@@ -142,14 +181,13 @@ fn get_unique_values(
                     keys: &Vec<&str>, 
                     get_values: bool, 
                     log: &Value,
-                    value: &str
-                ) -> HashSet<String> {
-    let mut uniques: HashSet<String> = HashSet::new();
+                    value: &str,
+                    mut uniques: &mut HashMap<String, u64>
+                ) {
     // Get all field names across all logs
-    if !check_key_value(&log, &keys, &value) { return uniques; }
+    if !check_key_value(&log, &keys, &value) { return; }
     // get all uniqued values of a given field
-    traverse_json_value(&log, &keys, &mut uniques);
-    return uniques
+    traverse_json_values_unique(&log, &keys, &mut uniques);
 }
 
 fn get_value_type(value: &Value) -> String {
@@ -265,14 +303,15 @@ fn main() -> io::Result<()> {
         get_uniques, 
         field_name,
         get_values,
-        value
+        value,
+        key_sort
     ) = get_args()?;
 
     let stdin = io::stdin();
 
     if !get_uniques { print_header(&fields, &delim) };
     
-    let mut unique_values = HashSet::new();
+    let mut unique_values: HashMap<String, u64> = HashMap::new();
     let mut unique_keys: HashMap<String, HashSet<String>> = HashMap::new();
     let no_whitespace = field_name.replace(char::is_whitespace, "");
     let mut keys: Vec<&str> = no_whitespace.split('.').collect();
@@ -289,7 +328,7 @@ fn main() -> io::Result<()> {
         // We are only looking for unique field names or values in a given field
         if get_uniques {
             if get_values {
-                unique_values.extend(get_unique_values(&keys, get_values, &log, &value));
+               get_unique_values(&keys, get_values, &log, &value, &mut unique_values);
             } else {
                 for (k, v) in get_unique_keys(&keys, get_values, &log, &value) {
                     let entry = unique_keys.entry(k).or_insert(HashSet::new());
@@ -315,7 +354,7 @@ fn main() -> io::Result<()> {
     // if we were only looking for uniques, print what was found
     if get_uniques {
         if get_values { 
-            print_unique_values(&unique_values);
+            print_unique_values(&unique_values, key_sort);
         } else {
             print_unique_keys(&unique_keys);
         }
@@ -323,7 +362,7 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn get_args() -> io::Result<(String, String, bool, String, bool, String)> {
+fn get_args() -> io::Result<(String, String, bool, String, bool, String, bool)> {
     let args: Vec<String> = env::args().collect();
     if args.len() == 1 { print_help(); }
     let mut fields = String::new();
@@ -336,6 +375,7 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String)> {
     let mut key = String::new();
     let mut get_string = false;
     let mut string = String::new();
+    let mut key_sort = false;
     for arg in args {
         match arg.as_str() {
             "-f" | "--fields" => get_fields = true,
@@ -344,6 +384,7 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String)> {
             "-s" | "--string" => get_string = true,
             "-u" | "--unique" => get_uniques = true,
             "-v" | "--values" => get_values = true,
+            "-z" | "--keysort" => key_sort = true,
             _ => {
                 if get_fields {
                     fields = arg.to_string();
@@ -368,7 +409,7 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String)> {
         println!("If '--string' is used then '--key' must be used.");
         print_help();
     }
-    Ok((fields, delim, get_uniques, key, get_values, string.to_lowercase()))
+    Ok((fields, delim, get_uniques, key, get_values, string.to_lowercase(), key_sort))
 }
 
 
@@ -401,8 +442,10 @@ Usage:
         - Collect and print a uniqued list of all key names found in logs with 
           the specified 'key_name'
     cat logs.json | jve --unique --values --key 'key_name'
-        - print a uniqued list of all values found in the key 'key_name' 
-          across all logs
+        - print a uniqued list of all values found in the key 'key_name' across all logs
+    cat logs.json | jve --unique --values --key 'key_name' -z
+        - print a uniqued list of all values found in the key 'key_name' across all logs 
+          and sort by the values, not the count of each unique value
 
 Options:
     -d, --delimiter ','             Value to use to seperate key value output
@@ -432,6 +475,7 @@ Options:
                                     - Nested key names will be dot delimited
     -v, --values                    Must be used along with '--unique' and '--key'
                                     - print the unique values of the specified key
+    -z, --valuesort                 - sort unique value by value instead of count
 
 NOTE:   If a key is an array or the key name occurs in an array, 
         this program will concatenate all array key values into a 
