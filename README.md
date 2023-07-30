@@ -74,6 +74,11 @@ sudo apt install musl-tools
 rustup target add x86_64-unknown-linux-musl
 cargo build --target x86_64-unknown-linux-musl --release
 ```
+### Compile on Linux for Windows
+```
+rustup target add x86_64-pc-windows-gnu
+cargo build --target x86_64-pc-windows-gnu
+```
 ### Example output
 ```
 fmd.exe .\fmd.exe | jve -d "," -f "filename,hashes.md5,entropy,binary.sections.sections.name,binary.sections.sections.entropy,binary.imports.imports.lib,binary.imports.imports.count"
