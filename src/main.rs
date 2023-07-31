@@ -475,7 +475,7 @@ Options:
                                     - Nested key names will be dot delimited
     -v, --values                    Must be used along with '--unique' and '--key'
                                     - print the unique values of the specified key
-    -z, --valuesort                 - sort unique value by value instead of count
+    -z, --valuesort                 - sort unique values by value instead of count
 
 NOTE:   If a key is an array or the key name occurs in an array, 
         this program will concatenate all array key values into a 
