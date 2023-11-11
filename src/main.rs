@@ -215,7 +215,7 @@ fn traverse_json_key(json: &Value, prefix: &str, paths: &mut HashMap<String, Has
         }
         Value::Array(vec) => {
             if let Some(first_element) = vec.first() {
-                traverse_json_key(first_element, prefix.clone(), paths);
+                traverse_json_key(first_element, prefix, paths);
             }
             let entry = paths.entry(prefix.to_owned()).or_insert(HashSet::new());
             entry.insert(get_value_type(&json));
@@ -475,7 +475,7 @@ Options:
                                     - Nested key names will be dot delimited
     -v, --values                    Must be used along with '--unique' and '--key'
                                     - print the unique values of the specified key
-    -z, --valuesort                 - sort unique values by value instead of count
+    -z, --valuesort                 Sort unique values by value instead of count
 
 NOTE:   If a key is an array or the key name occurs in an array, 
         this program will concatenate all array key values into a 
