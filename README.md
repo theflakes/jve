@@ -47,10 +47,8 @@ Options:
     -u, --unique                    Get uniqued entries for: 
                                     - if used by itself, all field names across 
                                       all logs and their data types
-                                      if the field is an array, the second data type
-                                      will be that of the values, unless the array 
-                                      is empty then there will not be a second data 
-                                      type listed
+                                    - if the field is an array: array[data_type]
+                                      empty array: array
                                     - if more than one data type is listed for a field
                                       then there are at least two logs with the same
                                       field name but containing differing value

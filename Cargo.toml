@@ -1,6 +1,6 @@
 [package]
 name = "jve"
-version = "0.7.5"
+version = "0.8.0"
 edition = "2021"
 authors = ["Brian Kellogg"]
 description = "Parse piped json output from other cmd line tools."
@@ -12,6 +12,7 @@ license = "MIT"
 [dependencies]
 serde_json = "*"
 itertools = "*"
+colored = "*"
 
 [profile.release]
 lto = "fat"

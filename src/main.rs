@@ -11,6 +11,7 @@ use std::{env, process};
 use serde_json::Value;
 use std::collections::{HashSet, HashMap};
 use itertools::Itertools;
+use colored::Colorize;
 
 
 fn print_results(output: &Vec<String>, split_fields: Vec<&str>, delim: &str) {
@@ -147,14 +148,22 @@ fn print_unique_values(mut uniques: &HashMap<String, u64>, key_sort: bool) {
 }
 
 fn print_unique_keys(mut uniques: &HashMap<String, HashSet<String>>) {
-    //println!("{:?}", uniques);
-    //println!("{}", serde_json::to_string_pretty(&uniques).unwrap());
     for key in uniques.keys().sorted() {
         let v = uniques[key].clone();
         let mut values: Vec<String> = v.into_iter().collect();
         values.sort();
-        let output = format!("{}: {:?}", key, values);
-        println!("{}", output);
+        match values.len() {
+            1 => println!("{}: {}", key, values.join(", ").green()),
+            2 => {
+                    if values[0] == "array" {
+                        let output = format!("{}", values.join("[").to_string() + "]");
+                        println!("{}: {}", key, output.green());
+                        break;
+                    }
+                    println!("{}: {}", key, values.join(", ").red())
+                },
+            _ => println!("{}: {}", key, values.join(", ").red()),
+        }
     }
 }
 
@@ -460,10 +469,8 @@ Options:
     -u, --unique                    Get uniqued entries for: 
                                     - if used by itself, all field names across 
                                       all logs and their data types
-                                      if the field is an array, the second data type
-                                      will be that of the values, unless the array 
-                                      is empty then there will not be a second data 
-                                      type listed
+                                    - if the field is an array: array[data_type]
+                                      empty array: array
                                     - if more than one data type is listed for a field
                                       then there are at least two logs with the same
                                       field name but containing differing value
