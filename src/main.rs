@@ -158,7 +158,7 @@ fn print_unique_keys(mut uniques: &HashMap<String, HashSet<String>>) {
                     if values[0] == "array" {
                         let output = format!("{}", values.join("[").to_string() + "]");
                         println!("{}: {}", key, output.green());
-                        break;
+                        continue;
                     }
                     println!("{}: {}", key, values.join(", ").red())
                 },
