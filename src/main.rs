@@ -233,7 +233,7 @@ fn traverse_json_key(json: &Value, prefix: &str, paths: &mut HashMap<String, Has
                 let first_value = json.as_array().unwrap().first().unwrap();
                 entry.insert(get_value_type(&first_value));
             } else {
-                entry.insert("none".to_string());
+                entry.insert("none".tnullo_string());
             }
         }
         _ => {
@@ -472,7 +472,7 @@ Options:
                                     - if used by itself, all field names across 
                                       all logs and their data types
                                     - if the field is an array: array[data_type]
-                                      empty array: array
+                                      empty array: array[none]
                                     - if more than one data type is listed for a field
                                       then there are at least two logs with the same
                                       field name but containing differing value
