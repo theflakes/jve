@@ -233,7 +233,7 @@ fn traverse_json_key(json: &Value, prefix: &str, paths: &mut HashMap<String, Has
                 let first_value = json.as_array().unwrap().first().unwrap();
                 entry.insert(get_value_type(&first_value));
             } else {
-                entry.insert("none".tnullo_string());
+                entry.insert("none".to_string());
             }
         }
         _ => {
