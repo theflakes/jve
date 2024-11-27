@@ -75,7 +75,7 @@ cargo build --target x86_64-unknown-linux-musl --release
 ### Compile on Linux for Windows
 ```
 rustup target add x86_64-pc-windows-gnu
-cargo build --target x86_64-pc-windows-gnu
+cargo build --target x86_64-pc-windows-gnu --release
 ```
 ### Example output
 ```
