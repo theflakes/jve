@@ -24,8 +24,11 @@ def print_logs_per_line(logs):
         print(json.dumps(log))
 
 def main():
-    parser = argparse.ArgumentParser(description='Read and concatenate JSON log files.')
-    parser.add_argument('directory', type=str, help='The directory containing JSON log files.')
+    parser = argparse.ArgumentParser(description="""Read and concatenate JSON log files. 
+        This will also work with pretty printed Json logs.
+        Pass a directory to the script and it will read in
+        and convert any file with a '.json' extension.""")
+    parser.add_argument('directory', type=str, help="The directory containing JSON log files wisth a '.json' extension.")
 
     args = parser.parse_args()
 
