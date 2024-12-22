@@ -227,13 +227,13 @@ fn traverse_json_key(json: &Value, prefix: &str, paths: &mut HashMap<String, Has
                 traverse_json_key(first_element, prefix, paths);
             }
             let entry = paths.entry(prefix.to_owned()).or_insert(HashSet::new());
-            entry.insert(get_value_type(&json));
             // get the type of the first value found in the array and append to the HashSet
             if !json.as_array().unwrap().is_empty() {
                 let first_value = json.as_array().unwrap().first().unwrap();
-                entry.insert(get_value_type(&first_value));
+                let key_type: String = format!("array[{}]", get_value_type(first_value));
+                entry.insert(key_type);
             } else {
-                entry.insert("none".to_string());
+                entry.insert("array[none]".to_string());
             }
         }
         _ => {
