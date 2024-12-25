@@ -211,7 +211,7 @@ fn get_value_type(value: &Value) -> String {
     }
 }
 
-fn update_map_key_count(map: &mut HashMap<String, usize>, key_type: &str) {
+fn update_map_key_type_count(map: &mut HashMap<String, usize>, key_type: &str) {
     if let Some(count) = map.get_mut(key_type) { 
             *count += 1; 
     } else {
@@ -231,7 +231,7 @@ fn update_or_insert_key_type(json_value: &Value, map: &mut HashMap<String, usize
     } else {
         key_type = get_value_type(json_value);
     }
-    update_map_key_count(map, &key_type);        
+    update_map_key_type_count(map, &key_type);        
 }
 
 fn update_key_info(json_value: &Value, prefix: &str, paths: &mut HashMap<String, (HashMap<String, usize>, usize)>) {
@@ -260,12 +260,10 @@ fn traverse_json_key(json_value: &Value, prefix: &str, paths: &mut HashMap<Strin
                     traverse_json_key(first_element, prefix, paths);
                 }
             }
-            update_key_info(json_value, prefix, paths);
         }
-        _ => {
-            update_key_info(json_value, prefix, paths);
-        }
+        _ => {}
     }
+    update_key_info(json_value, prefix, paths);
 }
 
 fn get_unique_keys(
