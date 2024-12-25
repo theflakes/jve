@@ -458,15 +458,15 @@ This program accepts piping line delimited json input via output from some previ
 
 Usage: 
     cat logs.json | jve --delimiter ',' --fields 'filename,hashes.md5,hashes.ssdeep'
-        - comma seperated output
+        - comma separate d output
     cat logs.json | jve -d '\\n' -f 'filename,hashes.md5,hashes.ssdeep'
         - output to a new line for each field
     cat logs.json | jve -d '\\t' -f 'filename,hashes.md5,hashes.ssdeep'
-        - tab seperated output
+        - tab separate d output
     cat logs.json | jve -d ',' -f 'filename,hashes.md5' --key 'path'
-        - comma seperated list of all fields only where the key named 'path' exists
+        - comma separate d list of all fields only where the key named 'path' exists
     cat logs.json | jve -d ',' -f 'filename,hashes.md5' -k 'path' --string '/home/evil'
-        - comma seperated list of all fields only where the key named 'path' exists
+        - comma separate d list of all fields only where the key named 'path' exists
           and the 'path' key's value contains the string '/home/evil'
     cat logs.json | jve --unique
         - Collect and print a uniqued list of all key names found in all logs
@@ -481,10 +481,10 @@ Usage:
           and sort by the values, not the count of each unique value
 
 Options:
-    -d, --delimiter ','             Value to use to seperate key value output
+    -d, --delimiter ','             Value to use to separate  key value output
                                     - when using a new line delimiter, array values
-                                      will be comma seperated
-    -f, --fields 'a.b.c.d,a.b.e'    Comma seperated list of keys in dot notation
+                                      will be comma separate d
+    -f, --fields 'a.b.c.d,a.b.e'    Comma separate d list of keys in dot notation
     -k, --key 'name_of_key'         Only examine logs where the specified key exists
     -s, --string 'string'           Only examine logs where the specified key's value
                                     contains the specified string
@@ -492,9 +492,9 @@ Options:
                                     - case insensitive match
     -u, --unique                    Get uniqued entries for: 
                                     - if used by itself, all field names across 
-                                      all logs, count of occurances across all logs, 
+                                      all logs, count of occurrences across all logs, 
                                       and their data types, data types will also 
-                                      include a count of occurances across all logs
+                                      include a count of occurrences across all logs
                                     - if the field is an array: array[data_type]
                                       empty array: array[none]
                                     - if more than one data type is listed for a field
