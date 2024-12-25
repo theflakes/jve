@@ -1,6 +1,6 @@
 [package]
 name = "jve"
-version = "0.8.2"
+version = "1.0.0"
 edition = "2021"
 authors = ["Brian Kellogg"]
 description = "Parse piped json output from other cmd line tools."

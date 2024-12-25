@@ -144,27 +144,28 @@ fn print_unique_values(mut uniques: &HashMap<String, u64>, key_sort: bool) {
     } else {
         u.sort_by(|a, b| a.1.cmp(b.1));
     }
-    for (k, v) in u { println!("{}: {}", k, v) }
+    for (k, v) in u { println!("{}:{}", k, v) }
+}
+    
+fn format_values(values_map: HashMap<String, usize>) -> String { 
+    let mut values: Vec<(String, usize)> = values_map.into_iter().collect(); 
+    values.sort_by(|a, b| a.0.cmp(&b.0));
+    let formatted_values: Vec<String> = values.into_iter() 
+        .map(|(k, v)| format!("{}:{}", k, v))
+        .collect(); 
+    match formatted_values.len() { 
+        1 => formatted_values.join(", ").green().to_string(),
+        _ => formatted_values.join(", ").red().to_string(),
+    }
 }
 
-fn print_unique_keys(mut uniques: &HashMap<String, HashSet<String>>) {
-    for key in uniques.keys().sorted() {
-        let v = uniques[key].clone();
-        let mut values: Vec<String> = v.into_iter().collect();
-        values.sort();
-        match values.len() {
-            1 => println!("{}: {}", key, values.join(", ").green()),
-            2 => {
-                    if values[0] == "array" {
-                        let output = format!("{}", values.join("[").to_string() + "]");
-                        println!("{}: {}", key, output.green());
-                        continue;
-                    }
-                    println!("{}: {}", key, values.join(", ").red())
-                },
-            _ => println!("{}: {}", key, values.join(", ").red()),
-        }
-    }
+fn print_unique_keys(uniques: &HashMap<String, (HashMap<String, usize>, usize)>) { 
+    for key in uniques.keys().sorted() { 
+        let v = uniques[key].clone(); 
+        let values = format_values(v.0); 
+        let count = v.1.to_string().yellow().to_string(); 
+        println!("{}:{}:{}", key, count, values); 
+    } 
 }
 
 // If not using new line delim, print field header
@@ -210,12 +211,42 @@ fn get_value_type(value: &Value) -> String {
     }
 }
 
+fn update_map_key_count(map: &mut HashMap<String, usize>, key_type: &str) {
+    if let Some(count) = map.get_mut(key_type) { 
+            *count += 1; 
+    } else {
+        map.insert(key_type.to_owned(), 1);
+    }
+}
+
+fn update_or_insert_key_type(json_value: &Value, map: &mut HashMap<String, usize>) {
+    let mut key_type = String::new();
+    if json_value.is_array() {
+        if !json_value.as_array().unwrap().is_empty() {
+            let value_type = json_value.as_array().unwrap().first().unwrap();
+            key_type = format!("array[{}]", get_value_type(value_type));
+        } else {
+            key_type = "array[none]".to_string();
+        }
+    } else {
+        key_type = get_value_type(json_value);
+    }
+    update_map_key_count(map, &key_type);        
+}
+
+fn update_key_info(json_value: &Value, prefix: &str, paths: &mut HashMap<String, (HashMap<String, usize>, usize)>) {
+    let mut entry = paths.entry(prefix.to_owned())
+        .or_insert((HashMap::new(), 0));
+    update_or_insert_key_type(json_value, &mut entry.0);
+    entry.1 += 1;
+}
+
 /*
    Recursively traverse Json structure to build dot delimited key paths
    and also report key value types
 */
-fn traverse_json_key(json: &Value, prefix: &str, paths: &mut HashMap<String, HashSet<String>>) {
-    match json {
+fn traverse_json_key(json_value: &Value, prefix: &str, paths: &mut HashMap<String, (HashMap<String, usize>, usize)>) {
+    match json_value {
         Value::Object(map) => {
             for (key, value) in map {
                 let new_prefix = get_new_prefix(&prefix, key);
@@ -224,21 +255,15 @@ fn traverse_json_key(json: &Value, prefix: &str, paths: &mut HashMap<String, Has
         }
         Value::Array(vec) => {
             if let Some(first_element) = vec.first() {
-                traverse_json_key(first_element, prefix, paths);
+                let fe_type = get_value_type(first_element);
+                if fe_type == "object" {
+                    traverse_json_key(first_element, prefix, paths);
+                }
             }
-            let entry = paths.entry(prefix.to_owned()).or_insert(HashSet::new());
-            // get the type of the first value found in the array and append to the HashSet
-            if !json.as_array().unwrap().is_empty() {
-                let first_value = json.as_array().unwrap().first().unwrap();
-                let key_type: String = format!("array[{}]", get_value_type(first_value));
-                entry.insert(key_type);
-            } else {
-                entry.insert("array[none]".to_string());
-            }
+            update_key_info(json_value, prefix, paths);
         }
         _ => {
-            let entry = paths.entry(prefix.to_owned()).or_insert(HashSet::new());
-            entry.insert(get_value_type(&json));
+            update_key_info(json_value, prefix, paths);
         }
     }
 }
@@ -247,17 +272,17 @@ fn get_unique_keys(
                     keys: &Vec<&str>, 
                     get_values: bool, 
                     log: &Value,
-                    value: &str
-                ) -> HashMap<String, HashSet<String>> {
-    let mut uniques = HashMap::new();
+                    value: &str,
+                    paths: &mut HashMap<String, (HashMap<String, usize>, usize)>
+                ) {
     // Get all field names across all logs
     if keys.is_empty() {
-        traverse_json_key(log, &"".to_string(), &mut uniques);
+        traverse_json_key(log, &"".to_string(), paths);
     } else {
-        if !check_key_value(&log, &keys, &value) { return uniques; }
-        traverse_json_key(log, &"".to_string(), &mut uniques);
+        if check_key_value(&log, &keys, &value) { 
+            traverse_json_key(log, &"".to_string(), paths); 
+        }
     }
-    return uniques
 }
 
 fn found_in_vec(values: &HashSet<String>, value: &str) -> bool {
@@ -323,7 +348,7 @@ fn main() -> io::Result<()> {
     if !get_uniques { print_header(&fields, &delim) };
     
     let mut unique_values: HashMap<String, u64> = HashMap::new();
-    let mut unique_keys: HashMap<String, HashSet<String>> = HashMap::new();
+    let mut paths: HashMap<String, (HashMap<String, usize>, usize)> = HashMap::new();
     let no_whitespace = field_name.replace(char::is_whitespace, "");
     let mut keys: Vec<&str> = no_whitespace.split('.').collect();
     keys.retain(|&k| k != "");
@@ -341,10 +366,7 @@ fn main() -> io::Result<()> {
             if get_values {
                get_unique_values(&keys, get_values, &log, &value, &mut unique_values);
             } else {
-                for (k, v) in get_unique_keys(&keys, get_values, &log, &value) {
-                    let entry = unique_keys.entry(k).or_insert(HashSet::new());
-                    entry.extend(v);
-                }
+                get_unique_keys(&keys, get_values, &log, &value, &mut paths);
             }
             continue;
         }
@@ -367,7 +389,7 @@ fn main() -> io::Result<()> {
         if get_values { 
             print_unique_values(&unique_values, key_sort);
         } else {
-            print_unique_keys(&unique_keys);
+            print_unique_keys(&paths);
         }
     }
     Ok(())
@@ -470,7 +492,9 @@ Options:
                                     - case insensitive match
     -u, --unique                    Get uniqued entries for: 
                                     - if used by itself, all field names across 
-                                      all logs and their data types
+                                      all logs, count of occurances across all logs, 
+                                      and their data types, data types will also 
+                                      include a count of occurances across all logs
                                     - if the field is an array: array[data_type]
                                       empty array: array[none]
                                     - if more than one data type is listed for a field
@@ -478,9 +502,11 @@ Options:
                                       field name but containing differing value
                                       types
                                     - unique key names of logs wherein the given 
-                                      key exists
+                                      key exists when '--key <key dot delimited name>' 
+                                      is specified
                                     - if '--values' is also specified, list all the
-                                      unique values of the specified key '--key'
+                                      unique values of the specified key 
+                                      '--key <key dot delimited name>'
                                     - Nested key names will be dot delimited
     -v, --values                    Must be used along with '--unique' and '--key'
                                     - print the unique values of the specified key
