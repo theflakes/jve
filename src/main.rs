@@ -184,7 +184,7 @@ fn format_values(
     let mut values: Vec<(String, usize)> = values_map.into_iter().collect(); 
     values.sort_by(|a, b| a.0.cmp(&b.0));
     let formatted_values: Vec<String> = values.into_iter() 
-        .map(|(k, v)| format!("{}:{}", k, v))
+        .map(|(k, v)| format!("{},{}", k, v))
         .collect(); 
     match formatted_values.len() { 
         1 => formatted_values.join(",").green().to_string(),
@@ -199,8 +199,8 @@ fn print_unique_keys(
     for key in uniques.keys().sorted() { 
         let v = uniques[key].clone(); 
         let values = format_values(v.0); 
-        let count = v.1.to_string().yellow().to_string(); 
-        println!("\"{}:{}\",\"{}\"", key, count, values); 
+        let count = v.1.to_string().yellow().to_string();
+        println!("{},{},{}", key, count, values); 
     } 
 }
 
@@ -468,6 +468,7 @@ fn main() -> io::Result<()> {
         if get_values { 
             print_unique_values(&unique_values, key_sort);
         } else {
+            println!("Key,Count,Type,Count");
             print_unique_keys(&paths);
         }
     }
