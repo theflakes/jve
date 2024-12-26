@@ -163,11 +163,11 @@ fmd.exe c:\ -d 2 | jve -d "\n" --fields "filename,hashes.md5,entropy,binary.sect
 #### Print a dot delimited list of all key names and all value types for each seen across all logs.
 ```
 cat .\res.txt | .\jve --unique
-ads: array
-binary.entry_point:1:string:1
-binary.exports.count:5:number:5
-binary.imports.imports:5:array[object]:4, array[string]:1
-binary.is_64:5:boolean:5
+ads,5,array[string],5
+binary.entry_point,1,string,1
+binary.exports.count,5,number,5
+binary.imports.imports,5,array[object],4,array[string],1
+binary.is_64,5,boolean,5
 ...
 ```
 #### Example log parsed by JVE -> using the [File Meta Data tool](https://github.com/theflakes/fmd)
