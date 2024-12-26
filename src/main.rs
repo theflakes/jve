@@ -14,7 +14,12 @@ use itertools::Itertools;
 use colored::Colorize;
 
 
-fn print_results(output: &Vec<String>, split_fields: Vec<&str>, delim: &str) {
+fn print_results(
+    output: &Vec<String>, 
+    split_fields: Vec<&str>, 
+    delim: &str
+) 
+{
     let mut results = String::new();
     match delim {
         "\\n" => {
@@ -33,7 +38,10 @@ fn print_results(output: &Vec<String>, split_fields: Vec<&str>, delim: &str) {
             { println!("{}", results); }
 }
 
-fn string_to_json(input: String) -> io::Result<Value> {
+fn string_to_json(
+    input: String
+) -> io::Result<Value> 
+{
     let json: Value = {
         let this = serde_json::from_str(&input);
         match this {
@@ -46,7 +54,10 @@ fn string_to_json(input: String) -> io::Result<Value> {
     Ok(json)
 }
 
-fn get_first_elem(set: &HashSet<String>) -> Option<&String> {
+fn get_first_elem(
+    set: &HashSet<String>
+) -> Option<&String> 
+{
     set.iter().next()
 }
 
@@ -65,7 +76,12 @@ fn join_values(array: &HashSet<String>) -> String {
 }
 
 // Setup for havesting targeted key's values
-fn get_key_values(json: &Value, field_paths: &str, delim: &str) {
+fn get_key_values(
+    json: &Value, 
+    field_paths: &str, 
+    delim: &str
+) 
+{
     let paths: Vec<&str> = field_paths.split(",").collect();
     let mut values = Vec::new();
     for path in paths.iter() {
@@ -80,7 +96,12 @@ fn get_key_values(json: &Value, field_paths: &str, delim: &str) {
 /*
    Recursively traverse Json structure to build array of values found in a key across all logs
 */
-fn traverse_json_value(json: &Value, field_names: &[&str], values: &mut HashSet<String>) {
+fn traverse_json_value(
+    json: &Value, 
+    field_names: &[&str], 
+    values: &mut HashSet<String>
+) 
+{
     if let Some((first_field_name, remaining_field_names)) = field_names.split_first() {
         match json {
             Value::Object(map) => {
@@ -106,7 +127,13 @@ fn traverse_json_value(json: &Value, field_names: &[&str], values: &mut HashSet<
 /*
    Recursively traverse Json structure to build array of values found in a key across all logs
 */
-fn traverse_json_values_unique(json: &Value, field_names: &[&str], uniques: &mut HashMap<String, u64>) {
+fn traverse_json_values_unique(
+    json: &Value, 
+    field_names: &[&str], 
+    uniques: 
+    &mut HashMap<String, u64>
+) 
+{
     if let Some((first_field_name, remaining_field_names)) = field_names.split_first() {
         match json {
             Value::Object(map) => {
@@ -128,7 +155,10 @@ fn traverse_json_values_unique(json: &Value, field_names: &[&str], uniques: &mut
     }
 }
 
-fn print_unique_values(mut uniques: &HashMap<String, u64>, key_sort: bool) {
+fn print_unique_values(
+    mut uniques: &HashMap<String, u64>, key_sort: bool
+) 
+{
     let mut u: Vec<(&String, &u64)> = uniques.iter().collect();
     if key_sort {
         // sort by the key based upon whether its a string or integer
@@ -147,7 +177,10 @@ fn print_unique_values(mut uniques: &HashMap<String, u64>, key_sort: bool) {
     for (k, v) in u { println!("{}:{}", k, v) }
 }
     
-fn format_values(values_map: HashMap<String, usize>) -> String { 
+fn format_values(
+    values_map: HashMap<String, usize>
+) -> String 
+{ 
     let mut values: Vec<(String, usize)> = values_map.into_iter().collect(); 
     values.sort_by(|a, b| a.0.cmp(&b.0));
     let formatted_values: Vec<String> = values.into_iter() 
@@ -159,7 +192,10 @@ fn format_values(values_map: HashMap<String, usize>) -> String {
     }
 }
 
-fn print_unique_keys(uniques: &HashMap<String, (HashMap<String, usize>, usize)>) { 
+fn print_unique_keys(
+    uniques: &HashMap<String, (HashMap<String, usize>, usize)>
+) 
+{ 
     for key in uniques.keys().sorted() { 
         let v = uniques[key].clone(); 
         let values = format_values(v.0); 
@@ -169,7 +205,11 @@ fn print_unique_keys(uniques: &HashMap<String, (HashMap<String, usize>, usize)>)
 }
 
 // If not using new line delim, print field header
-fn print_header(fields: &str, delim: &str) {
+fn print_header(
+    fields: &str, 
+    delim: &str
+) 
+{
     if delim.eq("\\n") { return; }
     match delim {
         "\\t" => println!("{}", fields.replace(",", "\t")),
@@ -178,7 +218,11 @@ fn print_header(fields: &str, delim: &str) {
 }
 
 // Build dot delimited key paths as we traverse the Json structure
-fn get_new_prefix(prefix: &str, key: &str) -> String{
+fn get_new_prefix(
+    prefix: &str, 
+    key: &str
+) -> String
+{
     let new_prefix = if prefix.is_empty() {
         key.to_string()
     } else {
@@ -188,19 +232,23 @@ fn get_new_prefix(prefix: &str, key: &str) -> String{
 }
 
 fn get_unique_values(
-                    keys: &Vec<&str>, 
-                    get_values: bool, 
-                    log: &Value,
-                    value: &str,
-                    mut uniques: &mut HashMap<String, u64>
-                ) {
+    keys: &Vec<&str>, 
+    get_values: bool, 
+    log: &Value,
+    value: &str,
+    mut uniques: &mut HashMap<String, u64>
+) 
+{
     // Get all field names across all logs
     if !check_key_value(&log, &keys, &value) { return; }
     // get all uniqued values of a given field
     traverse_json_values_unique(&log, &keys, &mut uniques);
 }
 
-fn get_value_type(value: &Value) -> String {
+fn get_value_type(
+    value: &Value
+) -> String 
+{
     match value {
         Value::Null => "null".to_string(),
         Value::Bool(_) => "boolean".to_string(),
@@ -211,7 +259,11 @@ fn get_value_type(value: &Value) -> String {
     }
 }
 
-fn update_map_key_type_count(map: &mut HashMap<String, usize>, key_type: &str) {
+fn update_map_key_type_count(
+    map: &mut HashMap<String, usize>, 
+    key_type: &str
+) 
+{
     if let Some(count) = map.get_mut(key_type) { 
             *count += 1; 
     } else {
@@ -219,7 +271,11 @@ fn update_map_key_type_count(map: &mut HashMap<String, usize>, key_type: &str) {
     }
 }
 
-fn update_or_insert_key_type(json_value: &Value, map: &mut HashMap<String, usize>) {
+fn update_or_insert_key_type(
+    json_value: &Value, 
+    map: &mut HashMap<String, usize>
+) 
+{
     let mut key_type = String::new();
     if json_value.is_array() {
         if !json_value.as_array().unwrap().is_empty() {
@@ -234,7 +290,12 @@ fn update_or_insert_key_type(json_value: &Value, map: &mut HashMap<String, usize
     update_map_key_type_count(map, &key_type);        
 }
 
-fn update_key_info(json_value: &Value, prefix: &str, paths: &mut HashMap<String, (HashMap<String, usize>, usize)>) {
+fn update_key_info(
+    json_value: &Value, 
+    prefix: &str, 
+    paths: &mut HashMap<String, (HashMap<String, usize>, usize)>
+) 
+{
     let mut entry = paths.entry(prefix.to_owned())
         .or_insert((HashMap::new(), 0));
     update_or_insert_key_type(json_value, &mut entry.0);
@@ -245,7 +306,12 @@ fn update_key_info(json_value: &Value, prefix: &str, paths: &mut HashMap<String,
    Recursively traverse Json structure to build dot delimited key paths
    and also report key value types
 */
-fn traverse_json_key(json_value: &Value, prefix: &str, paths: &mut HashMap<String, (HashMap<String, usize>, usize)>) {
+fn traverse_json_key(
+    json_value: &Value, 
+    prefix: &str, 
+    paths: &mut HashMap<String, (HashMap<String, usize>, usize)>
+) 
+{
     match json_value {
         Value::Object(map) => {
             for (key, value) in map {
@@ -267,12 +333,13 @@ fn traverse_json_key(json_value: &Value, prefix: &str, paths: &mut HashMap<Strin
 }
 
 fn get_unique_keys(
-                    keys: &Vec<&str>, 
-                    get_values: bool, 
-                    log: &Value,
-                    value: &str,
-                    paths: &mut HashMap<String, (HashMap<String, usize>, usize)>
-                ) {
+    keys: &Vec<&str>, 
+    get_values: bool, 
+    log: &Value,
+    value: &str,
+    paths: &mut HashMap<String, (HashMap<String, usize>, usize)>
+) 
+{
     // Get all field names across all logs
     if keys.is_empty() {
         traverse_json_key(log, &"".to_string(), paths);
@@ -283,7 +350,11 @@ fn get_unique_keys(
     }
 }
 
-fn found_in_vec(values: &HashSet<String>, value: &str) -> bool {
+fn found_in_vec(
+    values: &HashSet<String>, 
+    value: &str
+) -> bool 
+{
     for u in values {
         if u.to_lowercase().contains(value) {
             return true
@@ -293,7 +364,11 @@ fn found_in_vec(values: &HashSet<String>, value: &str) -> bool {
 }
 
 // Does the dot delimited Json key path exist?
-fn path_exists(json: &Value, keys: &[&str]) -> bool {
+fn path_exists(
+    json: &Value, 
+    keys: &[&str]
+) -> bool 
+{
     if let Some((first_key, remaining_keys)) = keys.split_first() {
         match json {
             Value::Object(map) => {
@@ -322,7 +397,12 @@ fn path_exists(json: &Value, keys: &[&str]) -> bool {
 }
 
 // Verify Key Value pair exist
-fn check_key_value(log: &Value, keys: &Vec<&str>, value: &str) -> bool {
+fn check_key_value(
+    log: &Value, 
+    keys: &Vec<&str>, 
+    value: &str
+) -> bool 
+{
     if value.is_empty() { return path_exists(log, &keys) }
     let mut values: HashSet<String> = HashSet::new();
     traverse_json_value(log, &keys, &mut values);
