@@ -187,8 +187,8 @@ fn format_values(
         .map(|(k, v)| format!("{}:{}", k, v))
         .collect(); 
     match formatted_values.len() { 
-        1 => formatted_values.join(", ").green().to_string(),
-        _ => formatted_values.join(", ").red().to_string(),
+        1 => formatted_values.join(",").green().to_string(),
+        _ => formatted_values.join(",").red().to_string(),
     }
 }
 
@@ -200,7 +200,7 @@ fn print_unique_keys(
         let v = uniques[key].clone(); 
         let values = format_values(v.0); 
         let count = v.1.to_string().yellow().to_string(); 
-        println!("{}:{}:{}", key, count, values); 
+        println!("\"{}:{}\",\"{}\"", key, count, values); 
     } 
 }
 
@@ -318,6 +318,7 @@ fn traverse_json_key(
                 let new_prefix = get_new_prefix(&prefix, key);
                 traverse_json_key(value, &new_prefix, paths);
             }
+            return;
         }
         Value::Array(vec) => {
             if let Some(first_element) = vec.first() {
