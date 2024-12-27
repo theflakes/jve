@@ -163,6 +163,7 @@ fmd.exe c:\ -d 2 | jve -d "\n" --fields "filename,hashes.md5,entropy,binary.sect
 #### Print a dot delimited list of all key names and all value types for each seen across all logs.
 ```
 cat .\res.txt | .\jve --unique
+Key,Count,Type,Count
 ads,5,array[string],5
 binary.entry_point,1,string,1
 binary.exports.count,5,number,5
