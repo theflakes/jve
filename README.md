@@ -1,5 +1,5 @@
 # Json Value Extractor
-Cmd line Linux and Windows utility that accepts json via standard in (piping) and extracts values from json fields.
+Cmd line Linux and Windows utility that accepts json via standard in (piping) and extracts unique field names that in includes count of occurances along with data types for each field and their occurance counts or values from specific json keys.
 
 ```
 Author: Brian Kellogg
@@ -8,7 +8,9 @@ Purpose: Extract json fields and values in various ways.
 
 JVE - Json Value Extractor
 
-This program accepts piping line delimited json input via output from some previous command.
+This program accepts piping line delimited json input via output from some previous command.  
+
+Included in the repo is a Python3 script to pipe json log files to this program.  
 
 Usage: 
     cat logs.json | jve --delimiter ',' --fields 'filename,hashes.md5,hashes.ssdeep'
