@@ -12,8 +12,10 @@ def read_json_files(directory):
         with open(file, 'r') as f:
             try:
                 logs = json.load(f)
-                # Assuming logs is a list of dictionaries
-                all_logs.extend(logs)
+                if isinstance(logs, list):
+                    all_logs.extend(logs)
+                elif isinstance(logs, dict):
+                    all_logs.append(logs)
             except json.JSONDecodeError as e:
                 print(f"Error reading {file}: {e}")
 
