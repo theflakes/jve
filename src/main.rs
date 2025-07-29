@@ -321,12 +321,10 @@ fn traverse_json_key(
             return;
         }
         Value::Array(vec) => {
-            if let Some(first_element) = vec.first() {
-                let fe_type = get_value_type(first_element);
-                if fe_type == "object" {
-                    traverse_json_key(first_element, prefix, paths);
-                }
+            for element in vec {
+                traverse_json_key(element, prefix, paths);
             }
+            return;
         }
         _ => {}
     }
