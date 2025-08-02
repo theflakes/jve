@@ -1,8 +1,3 @@
-/*
-    Ugh, not experienced in Rust enough to code this well. I am sorry.
-    But, it seems to work!
-*/
-
 extern crate serde_json;
 extern crate itertools;
 
@@ -38,6 +33,7 @@ fn print_results(
             { println!("{}", results); }
 }
 
+
 fn string_to_json(
     input: String
 ) -> io::Result<Value> 
@@ -61,6 +57,7 @@ fn get_first_elem(
     set.iter().next()
 }
 
+
 // If targeted key is an array, concat it using comma delim
 fn join_values(array: &HashSet<String>) -> String {
     let mut output = String::new();
@@ -74,6 +71,7 @@ fn join_values(array: &HashSet<String>) -> String {
     }
     return format!("\"{}\"", array.iter().join(","))
 }
+
 
 // Setup for havesting targeted key's values
 fn get_key_values(
@@ -92,6 +90,7 @@ fn get_key_values(
     }
     print_results(&values, paths, delim);
 }
+
 
 /*
    Recursively traverse Json structure to build array of values found in a key across all logs
@@ -155,6 +154,7 @@ fn traverse_json_values_unique(
     }
 }
 
+
 fn print_unique_values(
     mut uniques: &HashMap<String, u64>, key_sort: bool
 ) 
@@ -176,7 +176,8 @@ fn print_unique_values(
     }
     for (k, v) in u { println!("{}:{}", k, v) }
 }
-    
+
+
 fn format_values(
     values_map: HashMap<String, usize>
 ) -> String 
@@ -192,6 +193,7 @@ fn format_values(
     }
 }
 
+
 fn print_unique_keys(
     uniques: &HashMap<String, (HashMap<String, usize>, usize)>
 ) 
@@ -203,6 +205,7 @@ fn print_unique_keys(
         println!("{},{},{}", key, count, values); 
     } 
 }
+
 
 // If not using new line delim, print field header
 fn print_header(
@@ -216,6 +219,7 @@ fn print_header(
         _ => println!("{}", fields.replace(",", &delim))
     }
 }
+
 
 // Build dot delimited key paths as we traverse the Json structure
 fn get_new_prefix(
@@ -231,6 +235,7 @@ fn get_new_prefix(
     return new_prefix
 }
 
+
 fn get_unique_values(
     keys: &Vec<&str>, 
     get_values: bool, 
@@ -244,6 +249,7 @@ fn get_unique_values(
     // get all uniqued values of a given field
     traverse_json_values_unique(&log, &keys, &mut uniques);
 }
+
 
 fn get_value_type(
     value: &Value
@@ -259,6 +265,7 @@ fn get_value_type(
     }
 }
 
+
 fn update_map_key_type_count(
     map: &mut HashMap<String, usize>, 
     key_type: &str
@@ -270,6 +277,7 @@ fn update_map_key_type_count(
         map.insert(key_type.to_owned(), 1);
     }
 }
+
 
 fn update_or_insert_key_type(
     json_value: &Value, 
@@ -290,6 +298,7 @@ fn update_or_insert_key_type(
     update_map_key_type_count(map, &key_type);        
 }
 
+
 fn update_key_info(
     json_value: &Value, 
     prefix: &str, 
@@ -301,6 +310,7 @@ fn update_key_info(
     update_or_insert_key_type(json_value, &mut entry.0);
     entry.1 += 1;
 }
+
 
 /*
    Recursively traverse Json structure to build dot delimited key paths
@@ -314,6 +324,9 @@ fn traverse_json_key(
 {
     match json_value {
         Value::Object(map) => {
+            if map.is_empty() && !prefix.is_empty() {
+                update_key_info(json_value, prefix, paths);
+            }
             for (key, value) in map {
                 let new_prefix = get_new_prefix(&prefix, key);
                 traverse_json_key(value, &new_prefix, paths);
@@ -321,15 +334,23 @@ fn traverse_json_key(
             return;
         }
         Value::Array(vec) => {
+            if !prefix.is_empty() {
+                update_key_info(json_value, prefix, paths);
+            }
             for element in vec {
-                traverse_json_key(element, prefix, paths);
+                if element.is_object() || element.is_array() {
+                    traverse_json_key(element, prefix, paths);
+                }
             }
             return;
         }
         _ => {}
     }
-    update_key_info(json_value, prefix, paths);
+    if !prefix.is_empty() {
+        update_key_info(json_value, prefix, paths);
+    }
 }
+
 
 fn get_unique_keys(
     keys: &Vec<&str>, 
@@ -349,6 +370,7 @@ fn get_unique_keys(
     }
 }
 
+
 fn found_in_vec(
     values: &HashSet<String>, 
     value: &str
@@ -361,6 +383,7 @@ fn found_in_vec(
     }
     return false
 }
+
 
 // Does the dot delimited Json key path exist?
 fn path_exists(
@@ -395,6 +418,7 @@ fn path_exists(
     }
 }
 
+
 // Verify Key Value pair exist
 fn check_key_value(
     log: &Value, 
@@ -417,10 +441,38 @@ fn main() -> io::Result<()> {
         field_name,
         get_values,
         value,
-        key_sort
+        key_sort,
+        all_values
     ) = get_args()?;
 
     let stdin = io::stdin();
+    let mut lines = stdin.lines();
+
+    if all_values {
+        let mut paths: HashMap<String, (HashMap<String, usize>, usize)> = HashMap::new();
+        let mut all_lines = Vec::new();
+        for line in lines {
+            let l = match line {
+                Ok(o) => o,
+                Err(_) => {continue},
+            };
+            all_lines.push(l.clone());
+            let log = string_to_json(l)?;
+            get_unique_keys(&Vec::new(), false, &log, &"".to_string(), &mut paths);
+        }
+
+        for key in paths.keys().sorted() {
+            println!("--- {} ---", key);
+            let mut unique_values: HashMap<String, u64> = HashMap::new();
+            let key_vec: Vec<&str> = key.split('.').collect();
+            for line in &all_lines {
+                let log = string_to_json(line.clone())?;
+                traverse_json_values_unique(&log, &key_vec, &mut unique_values);
+            }
+            print_unique_values(&unique_values, key_sort);
+        }
+        return Ok(());
+    }
 
     if !get_uniques { print_header(&fields, &delim) };
     
@@ -430,7 +482,7 @@ fn main() -> io::Result<()> {
     let mut keys: Vec<&str> = no_whitespace.split('.').collect();
     keys.retain(|&k| k != "");
 
-    for line in stdin.lines() {
+    for line in lines {
         let l = match line {
             Ok(o) => o,
             Err(_) => {continue},
@@ -473,7 +525,8 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn get_args() -> io::Result<(String, String, bool, String, bool, String, bool)> {
+
+fn get_args() -> io::Result<(String, String, bool, String, bool, String, bool, bool)> {
     let args: Vec<String> = env::args().collect();
     if args.len() == 1 { print_help(); }
     let mut fields = String::new();
@@ -487,29 +540,48 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String, bool)> 
     let mut get_string = false;
     let mut string = String::new();
     let mut key_sort = false;
-    for arg in args {
-        match arg.as_str() {
-            "-f" | "--fields" => get_fields = true,
-            "-d" | "--delimiter" => get_delim = true,
-            "-k" | "--key" => get_key = true,
-            "-s" | "--string" => get_string = true,
-            "-u" | "--unique" => get_uniques = true,
-            "-v" | "--values" => get_values = true,
-            "-z" | "--valuesort" => key_sort = true,
-            _ => {
-                if get_fields {
-                    fields = arg.to_string();
-                    get_fields = false;
-                } else if get_delim {
-                    delim = arg.to_string();
-                    get_delim = false;
-                } else if get_key {
-                    key = arg.to_string();
-                    get_key = false;
-                } else if get_string {
-                    string = arg.to_string();
-                    get_string = false;
+    let mut all_values = false;
+    let mut iter = args.iter().skip(1);
+    while let Some(arg) = iter.next() {
+        if arg.starts_with("--") {
+            match arg.as_str() {
+                "--all-values" => all_values = true,
+                "--delimiter" => get_delim = true,
+                "--fields" => get_fields = true,
+                "--key" => get_key = true,
+                "--string" => get_string = true,
+                "--unique" => get_uniques = true,
+                "--values" => get_values = true,
+                "--valuesort" => key_sort = true,
+                _ => {}
+            }
+        } else if arg.starts_with("-") {
+            for c in arg.chars().skip(1) {
+                match c {
+                    'a' => all_values = true,
+                    'd' => get_delim = true,
+                    'f' => get_fields = true,
+                    'k' => get_key = true,
+                    's' => get_string = true,
+                    'u' => get_uniques = true,
+                    'v' => get_values = true,
+                    'z' => key_sort = true,
+                    _ => {}
                 }
+            }
+        } else {
+            if get_fields {
+                fields = arg.to_string();
+                get_fields = false;
+            } else if get_delim {
+                delim = arg.to_string();
+                get_delim = false;
+            } else if get_key {
+                key = arg.to_string();
+                get_key = false;
+            } else if get_string {
+                string = arg.to_string();
+                get_string = false;
             }
         }
     }
@@ -520,7 +592,7 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String, bool)> 
         println!("If '--string' is used then '--key' must be used.");
         print_help();
     }
-    Ok((fields, delim, get_uniques, key, get_values, string.to_lowercase(), key_sort))
+    Ok((fields, delim, get_uniques, key, get_values, string.to_lowercase(), key_sort, all_values))
 }
 
 
@@ -557,8 +629,11 @@ Usage:
     cat logs.json | jve --unique --values --key 'key_name' -z
         - print a uniqued list of all values found in the key 'key_name' across all logs 
           and sort by the values, not the count of each unique value
+    cat logs.json | jve --all-values
+        - print a uniqued list of all values for every key across all logs
 
 Options:
+    -a, --all-values                Get all unique values for all keys
     -d, --delimiter ','             Value to use to separate  key value output
                                     - when using a new line delimiter, array values
                                       will be comma separated
