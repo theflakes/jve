@@ -10,7 +10,7 @@ Purpose: Extract json fields and values in various ways.
 
 JVE - Json Value Extractor
 
-This program accepts piping line delimited json input via output from some previous command.  
+This program accepts piping line delimited json input via output from some previous command.
 
 Usage: 
     cat logs.json | jve --delimiter ',' --fields 'filename,hashes.md5,hashes.ssdeep'
@@ -35,8 +35,11 @@ Usage:
     cat logs.json | jve --unique --values --key 'key_name' -z
         - print a uniqued list of all values found in the key 'key_name' across all logs 
           and sort by the values, not the count of each unique value
+    cat logs.json | jve --all-values
+        - print a uniqued list of all values for every key across all logs
 
 Options:
+    -a, --all-values                Get all unique values for all keys
     -d, --delimiter ','             Value to use to separate  key value output
                                     - when using a new line delimiter, array values
                                       will be comma separated
