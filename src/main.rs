@@ -10,7 +10,7 @@ use colored::Colorize;
 
 
 fn print_results(
-    output: &Vec<String>, 
+    output: &[String], 
     split_fields: Vec<&str>, 
     delim: &str
 ) 
@@ -28,27 +28,13 @@ fn print_results(
         _     => results = output.join(delim)
     }
     // eh, ugly but tired now
-    if !results.is_empty() && !results.eq("") 
+    if !results.is_empty() && !results.is_empty() 
         && !results.eq("\"\"") && !results.eq("[\"\"]")
             { println!("{}", results); }
 }
 
 
-fn string_to_json(
-    input: String
-) -> io::Result<Value> 
-{
-    let json: Value = {
-        let this = serde_json::from_str(&input);
-        match this {
-            Ok(t) => t,
-            Err(_e) => {
-                return Ok(Value::Null);
-            },
-        }
-    };
-    Ok(json)
-}
+
 
 fn get_first_elem(
     set: &HashSet<String>
@@ -69,7 +55,7 @@ fn join_values(array: &HashSet<String>) -> String {
         };
         return output
     }
-    return format!("\"{}\"", array.iter().join(","))
+    format!("\"{}\"", array.iter().join(","))
 }
 
 
@@ -216,7 +202,7 @@ fn print_header(
     if delim.eq("\\n") { return; }
     match delim {
         "\\t" => println!("{}", fields.replace(",", "\t")),
-        _ => println!("{}", fields.replace(",", &delim))
+        _ => println!("{}", fields.replace(",", delim))
     }
 }
 
@@ -232,7 +218,7 @@ fn get_new_prefix(
     } else {
         format!("{}.{}", prefix, key)
     };
-    return new_prefix
+    new_prefix
 }
 
 
@@ -245,9 +231,9 @@ fn get_unique_values(
 ) 
 {
     // Get all field names across all logs
-    if !check_key_value(&log, &keys, &value) { return; }
+    if !check_key_value(log, keys, value) { return; }
     // get all uniqued values of a given field
-    traverse_json_values_unique(&log, &keys, &mut uniques);
+    traverse_json_values_unique(log, keys, uniques);
 }
 
 
@@ -328,7 +314,7 @@ fn traverse_json_key(
                 update_key_info(json_value, prefix, paths);
             }
             for (key, value) in map {
-                let new_prefix = get_new_prefix(&prefix, key);
+                let new_prefix = get_new_prefix(prefix, key);
                 traverse_json_key(value, &new_prefix, paths);
             }
             return;
@@ -361,12 +347,8 @@ fn get_unique_keys(
 ) 
 {
     // Get all field names across all logs
-    if keys.is_empty() {
-        traverse_json_key(log, &"".to_string(), paths);
-    } else {
-        if check_key_value(&log, &keys, &value) { 
-            traverse_json_key(log, &"".to_string(), paths); 
-        }
+        if keys.is_empty() || check_key_value(log, keys, value) { 
+        traverse_json_key(log, "", paths); 
     }
 }
 
@@ -381,7 +363,7 @@ fn found_in_vec(
             return true
         }
     }
-    return false
+    false
 }
 
 
@@ -396,25 +378,25 @@ fn path_exists(
             Value::Object(map) => {
                 if let Some(value) = map.get(*first_key) {
                     if remaining_keys.is_empty() {
-                        return true
+                        true
                     } else {
                         path_exists(value, remaining_keys)
                     }
                 } else {
-                    return false
+                    false
                 }
             }
             Value::Array(array) => {
                 if let Some(first_element) = array.first() {
                     path_exists(first_element, keys)
                 } else {
-                    return false
+                    false
                 }
             }
-            _ => return false,
+            _ => false,
         }
     } else {
-        return false
+        false
     }
 }
 
@@ -426,76 +408,59 @@ fn check_key_value(
     value: &str
 ) -> bool 
 {
-    if value.is_empty() { return path_exists(log, &keys) }
+    if value.is_empty() { return path_exists(log, keys) }
     let mut values: HashSet<String> = HashSet::new();
-    traverse_json_value(log, &keys, &mut values);
+    traverse_json_value(log, keys, &mut values);
     if values.is_empty() { return false; }
-    return found_in_vec(&values, &value)
+    found_in_vec(&values, value)
 }
 
 fn main() -> io::Result<()> {
-    let (
-        fields, 
-        delim, 
-        get_uniques, 
-        field_name,
-        get_values,
-        value,
-        key_sort,
-        all_values
-    ) = get_args()?;
+        let args = get_args()?;
 
-    let stdin = io::stdin();
-    let mut lines = stdin.lines();
+        let stdin = io::stdin();
+    let deserializer = serde_json::Deserializer::from_reader(stdin);
+    let iterator = deserializer.into_iter::<Value>();
 
-    if all_values {
+    if args.all_values {
         let mut paths: HashMap<String, (HashMap<String, usize>, usize)> = HashMap::new();
-        let mut all_lines = Vec::new();
-        for line in lines {
-            let l = match line {
-                Ok(o) => o,
-                Err(_) => {continue},
-            };
-            all_lines.push(l.clone());
-            let log = string_to_json(l)?;
-            get_unique_keys(&Vec::new(), false, &log, &"".to_string(), &mut paths);
+        let all_logs: Vec<Value> = iterator.filter_map(Result::ok).collect();
+        for log in &all_logs {
+            get_unique_keys(&Vec::new(), false, log, "", &mut paths);
         }
 
         for key in paths.keys().sorted() {
             println!("--- {} ---", key);
             let mut unique_values: HashMap<String, u64> = HashMap::new();
             let key_vec: Vec<&str> = key.split('.').collect();
-            for line in &all_lines {
-                let log = string_to_json(line.clone())?;
-                traverse_json_values_unique(&log, &key_vec, &mut unique_values);
+            for log in &all_logs {
+                traverse_json_values_unique(log, &key_vec, &mut unique_values);
             }
-            print_unique_values(&unique_values, key_sort);
+            print_unique_values(&unique_values, args.key_sort);
         }
         return Ok(());
     }
 
-    if !get_uniques { print_header(&fields, &delim) };
+        if !args.get_uniques { print_header(&args.fields, &args.delim) };
     
-    let mut unique_values: HashMap<String, u64> = HashMap::new();
+        let mut unique_values: HashMap<String, u64> = HashMap::new();
     let mut paths: HashMap<String, (HashMap<String, usize>, usize)> = HashMap::new();
-    let no_whitespace = field_name.replace(char::is_whitespace, "");
+    let no_whitespace = args.key.replace(char::is_whitespace, "");
     let mut keys: Vec<&str> = no_whitespace.split('.').collect();
-    keys.retain(|&k| k != "");
+    keys.retain(|&k| !k.is_empty());
 
-    for line in lines {
-        let l = match line {
+    for item in iterator {
+        let log = match item {
             Ok(o) => o,
             Err(_) => {continue},
         };
 
-        let log = string_to_json(l)?;
-
-        // We are only looking for unique field names or values in a given field
-        if get_uniques {
-            if get_values {
-               get_unique_values(&keys, get_values, &log, &value, &mut unique_values);
+                // We are only looking for unique field names or values in a given field
+        if args.get_uniques {
+                        if args.get_values {
+               get_unique_values(&keys, args.get_values, &log, &args.string, &mut unique_values);
             } else {
-                get_unique_keys(&keys, get_values, &log, &value, &mut paths);
+                get_unique_keys(&keys, args.get_values, &log, &args.string, &mut paths);
             }
             continue;
         }
@@ -503,20 +468,20 @@ fn main() -> io::Result<()> {
         // only print out logs where the given key exists  
         // and/or its value contains specified value
         if !keys.is_empty() {
-            if !check_key_value(&log, &keys, &value) { continue; }
-            get_key_values(&log, &fields, &delim);
+                        if !check_key_value(&log, &keys, &args.string) { continue; }
+                        get_key_values(&log, &args.fields, &args.delim);
             continue;
         }
 
         // we just want all fields specified 
         // including null results from log not having those fields
-        get_key_values(&log, &fields, &delim);
+                    get_key_values(&log, &args.fields, &args.delim);
     }
 
-    // if we were only looking for uniques, print what was found
-    if get_uniques {
-        if get_values { 
-            print_unique_values(&unique_values, key_sort);
+        // if we were only looking for uniques, print what was found
+    if args.get_uniques {
+                if args.get_values { 
+            print_unique_values(&unique_values, args.key_sort);
         } else {
             println!("Key,Count,Type,Count");
             print_unique_keys(&paths);
@@ -526,7 +491,18 @@ fn main() -> io::Result<()> {
 }
 
 
-fn get_args() -> io::Result<(String, String, bool, String, bool, String, bool, bool)> {
+struct CliArgs {
+    fields: String,
+    delim: String,
+    get_uniques: bool,
+    key: String,
+    get_values: bool,
+    string: String,
+    key_sort: bool,
+    all_values: bool,
+}
+
+fn get_args() -> io::Result<CliArgs> {
     let args: Vec<String> = env::args().collect();
     if args.len() == 1 { print_help(); }
     let mut fields = String::new();
@@ -542,7 +518,7 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String, bool, b
     let mut key_sort = false;
     let mut all_values = false;
     let mut iter = args.iter().skip(1);
-    while let Some(arg) = iter.next() {
+    for arg in iter {
         if arg.starts_with("--") {
             match arg.as_str() {
                 "--all-values" => all_values = true,
@@ -569,20 +545,18 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String, bool, b
                     _ => {}
                 }
             }
-        } else {
-            if get_fields {
-                fields = arg.to_string();
-                get_fields = false;
-            } else if get_delim {
-                delim = arg.to_string();
-                get_delim = false;
-            } else if get_key {
-                key = arg.to_string();
-                get_key = false;
-            } else if get_string {
-                string = arg.to_string();
-                get_string = false;
-            }
+        } else if get_fields {
+            fields = arg.to_string();
+            get_fields = false;
+        } else if get_delim {
+            delim = arg.to_string();
+            get_delim = false;
+        } else if get_key {
+            key = arg.to_string();
+            get_key = false;
+        } else if get_string {
+            string = arg.to_string();
+            get_string = false;
         }
     }
     if fields.is_empty() ^ delim.is_empty() {
@@ -592,7 +566,16 @@ fn get_args() -> io::Result<(String, String, bool, String, bool, String, bool, b
         println!("If '--string' is used then '--key' must be used.");
         print_help();
     }
-    Ok((fields, delim, get_uniques, key, get_values, string.to_lowercase(), key_sort, all_values))
+        Ok(CliArgs {
+        fields,
+        delim,
+        get_uniques,
+        key,
+        get_values,
+        string: string.to_lowercase(),
+        key_sort,
+        all_values,
+    })
 }
 
 
