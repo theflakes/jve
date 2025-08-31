@@ -441,9 +441,9 @@ fn main() -> io::Result<()> {
         return Ok(());
     }
 
-        if !args.get_uniques { print_header(&args.fields, &args.delim) };
+    if !args.get_uniques { print_header(&args.fields, &args.delim) };
     
-        let mut unique_values: HashMap<String, u64> = HashMap::new();
+    let mut unique_values: HashMap<String, u64> = HashMap::new();
     let mut paths: HashMap<String, (HashMap<String, usize>, usize)> = HashMap::new();
     let no_whitespace = args.key.replace(char::is_whitespace, "");
     let mut keys: Vec<&str> = no_whitespace.split('.').collect();
