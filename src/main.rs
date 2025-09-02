@@ -310,28 +310,36 @@ fn traverse_json_key(
 {
     match json_value {
         Value::Object(map) => {
-            if map.is_empty() && !prefix.is_empty() {
-                update_key_info(json_value, prefix, paths);
-            }
+            // Process all object fields first
             for (key, value) in map {
                 let new_prefix = get_new_prefix(prefix, key);
                 traverse_json_key(value, &new_prefix, paths);
             }
-            return;
-        }
-        Value::Array(vec) => {
+            
+            // Always process the parent object itself when prefix is not empty
             if !prefix.is_empty() {
                 update_key_info(json_value, prefix, paths);
             }
+            return;
+        }
+        Value::Array(vec) => {
+            // Process array elements first
             for element in vec {
                 if element.is_object() || element.is_array() {
                     traverse_json_key(element, prefix, paths);
                 }
             }
+            
+            // Process the array itself when prefix is not empty  
+            if !prefix.is_empty() {
+                update_key_info(json_value, prefix, paths);
+            }
             return;
         }
         _ => {}
     }
+    
+    // Process non-object/non-array values (including empty objects)
     if !prefix.is_empty() {
         update_key_info(json_value, prefix, paths);
     }
