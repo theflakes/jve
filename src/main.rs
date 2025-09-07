@@ -34,8 +34,6 @@ fn print_results(
 }
 
 
-
-
 fn get_first_elem(
     set: &HashSet<String>
 ) -> Option<&String> 
